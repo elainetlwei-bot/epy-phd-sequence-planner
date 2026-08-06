@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPY Doctoral Sequence Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Same palette as the M.S. planner. Two roles are new for the doctoral map:
+       ink-inverted bars = milestone gates, indigo = dissertation hours. */
+    --ink:#5D1725;
+    --ink-soft:#7B4A55;
+    --paper:#F6F3F3;
+    --paper-raised:#FFFFFF;
+    --brass:#8C6318;
+    --brass-soft:#E8D9B8;
+    --rail-green:#3F7859;
+    --rail-green-soft:#DCEAE1;
+    --rail-red:#C4442F;
+    --rail-red-soft:#FAE2DD;
+    --pool-blue:#4C6272;
+    --pool-blue-soft:#E0E6EA;
+    --diss:#565A7E;
+    --diss-soft:#E5E6EF;
+    --mist:#C9BFC1;
+    --mist-soft:#E4DDDE;
+    --display:'Fraunces', serif;
+    --body:'IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:var(--body);}
+  body{min-height:100vh;}
+
+  .app{max-width:100%;min-height:100vh;display:flex;flex-direction:column;}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    background:var(--paper-raised);border-bottom:3px solid var(--ink);
+    padding:0 0 16px;display:flex;align-items:flex-end;justify-content:space-between;
+    gap:24px;flex-wrap:wrap;position:sticky;top:0;z-index:20;
+  }
+  .topbar-brand{background:var(--ink);color:#fff;padding:16px 32px;align-self:stretch;display:flex;flex-direction:column;justify-content:center;}
+  .brand{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01em;margin:0;color:#fff;}
+  .brand-sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.75);margin:2px 0 0;}
+
+  .topbar-controls{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;padding-right:32px;}
+  .ctrl{display:flex;flex-direction:column;gap:4px;}
+  .ctrl > label{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);}
+  .ctrl select, .ctrl input[type=number]{
+    padding:8px 9px;border:1px solid var(--mist);border-radius:6px;
+    font-family:var(--body);font-size:13px;background:var(--paper-raised);color:var(--ink);
+  }
+  .ctrl-narrow input{width:78px;}
+  .ctrl select:focus, .ctrl input:focus{outline:2px solid #C9A9B0;outline-offset:1px;border-color:var(--ink);}
+
+  .track-toggle{display:flex;border:1px solid var(--mist);border-radius:6px;overflow:hidden;}
+  .track-toggle button{padding:8px 14px;border:none;background:var(--paper-raised);font-family:var(--body);font-weight:600;font-size:12.5px;cursor:pointer;color:var(--ink-soft);white-space:nowrap;}
+  .track-toggle button.active{background:var(--ink);color:#fff;}
+  .track-toggle button:not(:last-child){border-right:1px solid var(--mist);}
+
+  /* ---------- Main ---------- */
+  .main{padding:28px 32px 60px;overflow-x:auto;flex:1;}
+  .main-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px;flex-wrap:wrap;gap:12px;}
+  .main-title{font-family:var(--display);font-weight:700;font-size:27px;margin:0;letter-spacing:-0.01em;}
+  .main-sub{font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin-top:4px;}
+  .legend{display:flex;gap:14px;font-size:11px;color:var(--ink-soft);font-family:var(--mono);flex-wrap:wrap;}
+  .legend span{display:flex;align-items:center;gap:6px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+
+  .disclaimer{
+    margin:34px 0 0;max-width:720px;font-size:12px;line-height:1.65;color:var(--ink-soft);
+    border-left:3px solid var(--mist);padding:12px 0 12px 16px;
+  }
+  .disclaimer strong{color:var(--ink);font-weight:600;}
+
+  /* ---------- Board ---------- */
+  .board-wrap{position:relative;margin-top:26px;min-width:fit-content;}
+  .board{display:flex;gap:0;position:relative;z-index:2;}
+  svg.connectors{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:visible;}
+
+  .semester-col{width:148px;flex-shrink:0;padding:0 9px;border-right:1px dashed var(--mist-soft);}
+  .semester-col:last-child{border-right:none;}
+  .semester-col.collapsed{width:44px;padding:0;background:repeating-linear-gradient(135deg,transparent,transparent 6px,var(--mist-soft) 6px,var(--mist-soft) 7px);}
+  .collapsed-label{writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--ink-soft);padding:14px 0;margin:0 auto;white-space:nowrap;}
+  .sem-header{text-align:center;padding-bottom:9px;margin-bottom:11px;border-bottom:2px solid var(--ink);}
+  .sem-name{font-family:var(--display);font-weight:600;font-size:12.5px;letter-spacing:-.01em;}
+  .sem-credits{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);margin-top:3px;}
+  .sem-credits.over{color:var(--rail-red);font-weight:600;}
+  .sem-summer{font-family:var(--mono);font-size:10px;color:var(--brass);margin-top:3px;font-weight:600;}
+  .sem-year-tag{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);opacity:.8;}
+
+  .course-card{background:var(--paper-raised);border:1.5px solid var(--mist-soft);border-radius:8px;padding:8px 9px 7px;margin-bottom:10px;position:relative;box-shadow:0 1px 2px rgba(22,34,59,.05);}
+  .course-card.invalid{border-color:var(--rail-red);background:var(--rail-red-soft);}
+  .course-card.pool{border-left:3px solid var(--pool-blue);}
+  .course-card.required{border-left:3px solid var(--ink);}
+  .cc-type{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:5px;}
+  .cc-type.is-required{color:var(--ink);}
+  .cc-type.is-elective{color:var(--pool-blue);}
+  .cc-done{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10.5px;color:var(--ink-soft);cursor:pointer;font-family:var(--mono);}
+  .cc-done input{accent-color:var(--rail-green);width:13px;height:13px;cursor:pointer;}
+  .course-card .cc-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  .course-card .cc-code{font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:-.02em;}
+  .course-card .cc-credits{font-family:var(--mono);font-size:10px;color:var(--mist);}
+  .course-card .cc-title{font-family:var(--body);font-weight:500;font-size:10.5px;color:var(--ink-soft);margin:2px 0 5px;line-height:1.28;}
+  .course-card .cc-meta{display:flex;justify-content:space-between;align-items:center;gap:4px;font-family:var(--mono);font-size:9.5px;color:var(--mist);}
+  .cc-flags{display:inline-flex;gap:3px;}
+  .cc-flags i{font-style:normal;font-size:9px;line-height:1;}
+  .cc-flags .flag-risk{background:var(--brass);color:#fff;border-radius:50%;width:11px;height:11px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:8px;}
+  .cc-flags .flag-verify{background:var(--brass-soft);color:#6B4A12;border-radius:50%;width:11px;height:11px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:8px;}
+  .course-card select.move-select{width:100%;margin-top:7px;font-size:10px;font-family:var(--mono);border:1px solid var(--mist);border-radius:5px;padding:4px 5px;background:var(--paper);color:var(--ink-soft);}
+  .cc-warning{font-size:10.5px;color:var(--rail-red);margin-top:6px;font-weight:600;display:flex;gap:4px;align-items:flex-start;}
+  .cc-area{font-family:var(--mono);font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--mist);margin-top:6px;}
+
+  .course-card{cursor:pointer;transition:opacity .15s ease, box-shadow .15s ease;}
+  .course-card.dimmed{opacity:.24;}
+  .course-card.chain-root{box-shadow:0 0 0 2.5px var(--ink), 0 3px 10px rgba(93,23,37,.2);}
+  .course-card.chain-up{box-shadow:0 0 0 2px var(--brass);}
+  .course-card.chain-down{box-shadow:0 0 0 2px var(--pool-blue);}
+  .cc-prereq{font-family:var(--mono);font-size:10px;color:var(--ink-soft);margin-top:5px;line-height:1.4;}
+  .cc-prereq span{text-transform:uppercase;letter-spacing:.08em;color:var(--mist);margin-right:3px;}
+
+  .chain-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 14px;margin-bottom:14px;
+    border:1px dashed var(--mist);border-radius:8px;background:var(--paper-raised);min-height:38px;}
+  .chain-bar.on{border-style:solid;border-color:var(--ink);background:#FBF7F7;}
+  .chain-idle{font-size:12px;color:var(--ink-soft);}
+  .chain-live{font-size:13px;color:var(--ink);}
+  .chain-live b{font-family:var(--display);font-size:14.5px;}
+  .chain-detail{font-family:var(--mono);font-size:11px;color:var(--ink-soft);flex:1;}
+  .chain-clear{font-family:var(--body);font-size:11.5px;font-weight:600;border:1px solid var(--mist);
+    background:var(--paper);color:var(--ink-soft);border-radius:6px;padding:4px 11px;cursor:pointer;}
+  .chain-clear:hover{border-color:var(--ink);color:var(--ink);}
+
+  .course-card.locked{border-color:var(--brass);background:#FDF8EE;}
+  .lock-tag{display:inline-block;background:var(--brass-soft);color:#6B4A12;font-size:9.5px;font-family:var(--mono);padding:1px 6px;border-radius:10px;margin-left:6px;text-transform:uppercase;font-weight:600;}
+  .cc-locknote{font-size:10.5px;color:#6B4A12;margin-top:6px;line-height:1.4;}
+  .cc-lockfixed{margin-top:8px;font-family:var(--mono);font-size:10.5px;color:#6B4A12;background:var(--brass-soft);border-radius:5px;padding:5px 6px;text-align:center;letter-spacing:.02em;}
+  .verify-tag{display:inline-block;background:var(--brass-soft);color:#6B4A12;font-size:9.5px;font-family:var(--mono);padding:1px 6px;border-radius:10px;margin-left:6px;text-transform:uppercase;}
+  .cc-summer{font-size:10px;font-family:var(--mono);color:var(--brass);background:var(--brass-soft);border-radius:5px;padding:4px 6px;margin:6px 0 0;line-height:1.4;font-weight:600;}
+  .course-card.summer-course{border-left:3px dashed var(--brass);}
+  .cc-request{font-size:10px;font-family:var(--mono);color:var(--pool-blue);background:var(--pool-blue-soft);border-radius:5px;padding:4px 6px;margin:0 0 6px;line-height:1.4;}
+  .request-tag{display:inline-block;background:var(--pool-blue-soft);color:var(--pool-blue);font-size:9.5px;font-family:var(--mono);padding:1px 6px;border-radius:10px;margin-left:6px;text-transform:uppercase;}
+  .cc-slip{font-size:9px;font-family:var(--mono);border-radius:4px;padding:3px 5px;margin:5px 0 0;line-height:1.35;letter-spacing:-.01em;}
+  .cc-fullname{font-size:10px;color:var(--ink);margin-top:7px;line-height:1.35;font-weight:500;}
+  .cc-deps{font-size:9.5px;font-family:var(--mono);color:var(--pool-blue);background:var(--pool-blue-soft);border-radius:4px;padding:3px 5px;margin-top:5px;}
+  .cc-slip.soon{background:var(--mist-soft);color:var(--ink-soft);}
+  .cc-slip.wide{background:var(--brass-soft);color:#6B4A12;}
+  .cc-slip.none{background:var(--rail-red-soft);color:var(--rail-red);font-weight:600;}
+  .cc-verify{font-size:10px;font-family:var(--mono);color:#6B4A12;background:var(--brass-soft);border-radius:5px;padding:4px 6px;margin:0 0 6px;line-height:1.4;}
+  .catalog-group-head{font-family:var(--display);font-weight:600;font-size:14.5px;color:var(--ink);margin:22px 0 2px;padding-bottom:5px;border-bottom:1.5px solid var(--ink);}
+  .bottleneck-tag{display:inline-block;background:var(--rail-red-soft);color:var(--rail-red);font-size:9.5px;font-family:var(--mono);padding:1px 6px;border-radius:10px;margin-left:6px;text-transform:uppercase;font-weight:600;}
+
+  .course-card.open-slot{
+    background:transparent;border:1.5px dashed var(--mist);box-shadow:none;
+    display:flex;flex-direction:column;justify-content:center;min-height:56px;
+  }
+  .cc-opentitle{font-family:var(--body);font-size:10px;color:var(--ink-soft);margin:2px 0 5px;}
+  .cc-openempty{font-family:var(--mono);font-size:10px;color:var(--mist);line-height:1.4;}
+
+  /* ---------- Milestone gate: the signature element of the doctoral map ---------- */
+  .gate-card{
+    background:var(--ink);color:#fff;border-radius:8px;padding:9px 10px 8px;
+    margin-bottom:10px;position:relative;box-shadow:0 2px 6px rgba(93,23,37,.22);
+  }
+  .gate-card.blocked{background:#7A2230;box-shadow:none;}
+  .gate-eyebrow{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.62);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+  .gate-eyebrow::before{content:'';flex:1;height:1px;background:rgba(255,255,255,.28);order:2;}
+  .gate-name{font-family:var(--display);font-weight:600;font-size:12.5px;line-height:1.2;letter-spacing:-.01em;}
+  .gate-note{font-size:9.5px;color:rgba(255,255,255,.75);margin-top:5px;line-height:1.4;}
+  .gate-warn{font-size:10.5px;color:#FFD9D2;margin-top:7px;font-weight:600;line-height:1.45;}
+  .gate-card .cc-done{color:rgba(255,255,255,.7);}
+
+  /* ---------- Dissertation hours ---------- */
+  .diss-card{background:var(--diss-soft);border:1.5px solid var(--diss);border-left-width:3px;border-radius:8px;padding:8px 9px 7px;margin-bottom:10px;position:relative;}
+  .diss-card .cc-type{color:var(--diss);}
+  .diss-hours{font-family:var(--display);font-weight:700;font-size:17px;color:var(--diss);line-height:1;}
+  .diss-hours small{font-family:var(--mono);font-size:10.5px;font-weight:400;margin-left:4px;}
+  .diss-stepper{display:flex;align-items:center;gap:8px;margin-top:9px;}
+  .diss-stepper button{width:26px;height:26px;border-radius:6px;border:1px solid var(--diss);background:var(--paper-raised);color:var(--diss);font-size:15px;line-height:1;cursor:pointer;font-family:var(--body);}
+  .diss-stepper button:hover{background:var(--diss);color:#fff;}
+  .diss-stepper button:disabled{opacity:.35;cursor:not-allowed;}
+  .diss-runtot{font-family:var(--mono);font-size:10px;color:var(--diss);}
+
+  /* ---------- Strips ---------- */
+  .completed-panel{border:1.5px solid var(--mist);border-left:4px solid var(--rail-green);border-radius:9px;background:var(--paper-raised);padding:14px 16px 13px;margin-bottom:26px;}
+  .cp-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:11px;}
+  .cp-title{font-family:var(--display);font-weight:700;font-size:15.5px;letter-spacing:-.01em;}
+  .cp-hint{font-size:11.5px;color:var(--ink-soft);flex:1;min-width:220px;line-height:1.45;}
+  .cp-count{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--mist);white-space:nowrap;}
+  .cp-count.on{color:var(--rail-green);font-weight:600;}
+  .cp-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .cp-chip{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;
+    padding:5px 10px;border-radius:20px;border:1px solid var(--mist);background:var(--paper);
+    color:var(--ink-soft);cursor:pointer;white-space:nowrap;transition:background .12s ease,color .12s ease;}
+  .cp-chip:hover{border-color:var(--rail-green);color:var(--rail-green);}
+  .cp-chip:focus-visible{outline:2px solid var(--ink);outline-offset:1px;}
+  .cp-chip.done{background:var(--rail-green);border-color:var(--rail-green);color:#fff;font-weight:500;}
+  .cp-tick{font-size:10px;width:8px;display:inline-block;}
+  .done-strip{margin-top:0;margin-bottom:26px;border-left:3px solid var(--rail-green);border-radius:0 8px 8px 0;padding:12px 0 12px 16px;background:linear-gradient(90deg,var(--rail-green-soft),transparent 70%);}
+  .done-strip h3{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--rail-green);margin:0 0 10px;}
+  .strip-card.done{background:var(--rail-green-soft);border:1px solid var(--rail-green);}
+  .unscheduled-strip{margin-top:32px;border-top:2px solid var(--rail-red);padding-top:16px;}
+  .unscheduled-strip h3{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--rail-red);margin:0 0 10px;}
+  .pool-strip{margin-top:24px;border-top:2px solid var(--pool-blue);padding-top:16px;}
+  .pool-strip h3{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--pool-blue);margin:0 0 10px;}
+  .strip-list{display:flex;flex-wrap:wrap;gap:10px;}
+  .strip-card{border-radius:8px;padding:8px 12px;font-size:12.5px;max-width:270px;}
+  .strip-card.warn{background:var(--rail-red-soft);border:1px solid var(--rail-red);}
+  .strip-card.pool{background:var(--pool-blue-soft);border:1px solid var(--pool-blue);}
+  .strip-card b{font-family:var(--display);font-size:13.5px;display:block;margin-bottom:2px;}
+  .strip-card span{color:var(--ink-soft);font-size:11px;}
+
+  /* ---------- Distribution tally ---------- */
+  .tally{margin-top:36px;border-top:2px solid var(--ink);padding-top:18px;max-width:940px;}
+  .tally h3{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink);margin:0 0 14px;}
+  .tally-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px;}
+  .tally-item{border-left:3px solid var(--mist);padding-left:12px;}
+  .tally-item.met{border-left-color:var(--rail-green);}
+  .tally-item.short{border-left-color:var(--rail-red);}
+  .tally-label{font-size:12px;font-weight:600;color:var(--ink);line-height:1.3;}
+  .tally-nums{font-family:var(--display);font-weight:700;font-size:21px;margin-top:4px;letter-spacing:-.01em;}
+  .tally-nums small{font-family:var(--mono);font-size:11px;font-weight:400;color:var(--ink-soft);letter-spacing:0;}
+  .tally-bar{height:5px;background:var(--mist-soft);border-radius:3px;margin-top:7px;overflow:hidden;}
+  .tally-bar i{display:block;height:100%;background:var(--rail-green);border-radius:3px;}
+  .tally-item.short .tally-bar i{background:var(--rail-red);}
+  .tally-note{font-family:var(--mono);font-size:10px;color:var(--ink-soft);margin-top:5px;}
+
+  .empty-state{font-family:var(--mono);color:var(--ink-soft);font-size:13px;padding:60px 0;text-align:center;max-width:440px;margin:0 auto;}
+  .empty-state b{color:var(--ink);font-family:var(--display);font-size:17px;display:block;margin-bottom:8px;}
+
+  /* ---------- Admin drawer ---------- */
+  .admin{border-top:1px solid var(--mist-soft);background:var(--paper-raised);margin-top:auto;}
+  .admin-toggle{
+    width:100%;background:none;border:none;cursor:pointer;text-align:left;
+    padding:18px 32px;display:flex;align-items:baseline;gap:12px;font-family:var(--body);
+  }
+  .admin-toggle:hover{background:var(--paper);}
+  .admin-toggle-label{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);font-weight:600;}
+  .admin-toggle-sub{font-size:12px;color:var(--ink-soft);flex:1;}
+  .admin-chevron{color:var(--ink-soft);font-size:12px;transition:transform .2s ease;}
+  .admin-toggle.open .admin-chevron{transform:rotate(180deg);}
+  .admin-body{padding:0 32px 40px;border-top:1px solid var(--mist-soft);}
+  .admin-grid{display:grid;grid-template-columns:1fr 340px;gap:40px;max-width:1180px;}
+  .section-title{font-family:var(--display);font-weight:600;font-size:17px;margin:26px 0 12px;}
+
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+  .field input[type=text], .field input[type=number], .field select{
+    width:100%;padding:9px 10px;border:1px solid var(--mist);border-radius:6px;
+    font-family:var(--body);font-size:13.5px;background:var(--paper-raised);color:var(--ink);
+  }
+  .field input:focus, .field select:focus{outline:2px solid #C9A9B0;outline-offset:1px;border-color:var(--ink);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+  .hint{font-size:11px;color:var(--ink-soft);margin-top:4px;line-height:1.45;}
+
+  .catalog-group-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin:16px 0 6px;}
+  .catalog-list{display:flex;flex-direction:column;gap:8px;}
+  .catalog-item{border:1px solid var(--mist-soft);border-radius:8px;padding:10px 12px;background:var(--paper);position:relative;}
+  .catalog-item.pool{border-left:3px solid var(--pool-blue);}
+  .catalog-item.gate{border-left:3px solid var(--ink);}
+  .catalog-item.diss{border-left:3px solid var(--diss);}
+  .catalog-item .ci-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  .catalog-item .ci-code{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:-.01em;}
+  .catalog-item .ci-credits{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);white-space:nowrap;}
+  .catalog-item .ci-title{font-family:var(--body);font-weight:500;font-size:12px;color:var(--ink-soft);margin-top:2px;line-height:1.35;}
+  .catalog-item .ci-meta{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);margin-top:6px;text-transform:uppercase;letter-spacing:.03em;line-height:1.5;}
+  .pool-tag{display:inline-block;background:var(--pool-blue-soft);color:var(--pool-blue);font-size:9.5px;font-family:var(--mono);padding:1px 6px;border-radius:10px;margin-left:6px;text-transform:uppercase;}
+  .area-tag{display:inline-block;background:var(--mist-soft);color:var(--ink-soft);font-size:9.5px;font-family:var(--mono);padding:1px 6px;border-radius:10px;margin-left:6px;text-transform:uppercase;}
+  .ci-remove{position:absolute;top:6px;right:6px;background:none;border:none;color:var(--mist);font-size:15px;cursor:pointer;line-height:1;padding:2px 5px;}
+  .ci-remove:hover{color:var(--rail-red);}
+
+  .term-config{border:1px solid var(--mist-soft);border-radius:6px;padding:8px 10px;margin-top:4px;}
+  .term-row{display:flex;align-items:center;gap:8px;padding:4px 0;}
+  .term-row label{flex:0 0 66px;font-size:12.5px;font-weight:500;color:var(--ink);margin:0;display:flex;align-items:center;gap:6px;}
+  .term-row select{flex:1;padding:5px 6px;font-size:12px;}
+  .term-row input[type=checkbox]{accent-color:var(--ink);}
+
+  .add-course-form{border:1px dashed var(--mist);border-radius:8px;padding:14px;margin-top:12px;background:var(--paper);}
+  .chip-select{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+  .chip{font-size:11.5px;font-family:var(--mono);padding:5px 9px;border-radius:20px;border:1px solid var(--mist);background:var(--paper-raised);cursor:pointer;user-select:none;color:var(--ink-soft);}
+  .chip.active{background:var(--ink);color:var(--paper-raised);border-color:var(--ink);}
+
+  .gate-config{border:1px solid var(--mist-soft);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--paper);}
+  .gate-config h4{font-family:var(--body);font-size:13px;font-weight:600;margin:0 0 8px;color:var(--ink);}
+  .gate-config .hint{margin-top:0;margin-bottom:8px;}
+
+  button.btn{font-family:var(--body);font-weight:600;font-size:13px;border:none;border-radius:7px;padding:10px 16px;cursor:pointer;}
+  .btn-primary{background:var(--ink);color:var(--paper-raised);width:100%;}
+  .btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--mist);}
+  .btn-ghost:hover{border-color:var(--ink-soft);color:var(--ink);}
+  .btn-generate{background:var(--ink);color:#fff;padding:10px 20px;font-size:13.5px;letter-spacing:.02em;box-shadow:0 1px 0 rgba(0,0,0,.12);white-space:nowrap;}
+  .btn-generate:hover{background:#42101A;}
+
+  @media (max-width:800px){
+    .admin-grid{grid-template-columns:1fr;gap:20px;}
+    .topbar{padding:0 0 12px;}
+    .topbar-brand{padding:12px 18px;}
+    .topbar-controls{padding-right:18px;padding-left:18px;}
+    .main{padding:20px 18px 40px;}
+    .admin-toggle, .admin-body{padding-left:18px;padding-right:18px;}
+  }
+
+  ::-webkit-scrollbar{height:10px;width:10px;}
+  ::-webkit-scrollbar-thumb{background:var(--mist);border-radius:6px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="topbar-brand">
+      <p class="brand">EPY Doctoral Planner</p>
+      <p class="brand-sub" id="brandSub">Ph.D. Educational Psychology</p>
+    </div>
+
+    <div class="topbar-controls">
+      <div class="ctrl">
+        <label for="startTerm">Start</label>
+        <select id="startTerm"><option>Fall</option><option>Spring</option><option>Summer</option></select>
+      </div>
+      <div class="ctrl ctrl-narrow">
+        <label for="startYear">Year</label>
+        <input type="number" id="startYear" value="2026">
+      </div>
+      <div class="ctrl ctrl-narrow">
+        <label for="maxCourses">Courses/term</label>
+        <input type="number" id="maxCourses" value="3" min="1">
+      </div>
+      <div class="ctrl ctrl-narrow">
+        <label for="numYears">Years</label>
+        <input type="number" id="numYears" value="5" min="1">
+      </div>
+      <button class="btn btn-generate" id="generateBtn">Generate plan &rarr;</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="main-head">
+      <div>
+        <p class="main-title">Doctoral Sequence Map</p>
+        <p class="main-sub" id="mainSubtitle">Set the entry point and start term, then generate a plan.</p>
+      </div>
+      <div class="legend" id="legend">
+        <span><span class="dot" style="background:var(--ink)"></span>required &amp; milestone</span>
+        <span><span class="dot" style="background:var(--pool-blue)"></span>elective</span>
+        <span><span class="dot" style="background:var(--diss)"></span>dissertation hrs</span>
+        <span><span class="dot" style="background:var(--brass)"></span>locked &mdash; no other term</span>
+        <span><span class="dot" style="background:var(--rail-green)"></span>completed</span>
+        <span><span class="dot" style="background:var(--brass)"></span>chain: comes before</span>
+        <span><span class="dot" style="background:var(--pool-blue)"></span>chain: waits on it</span>
+      </div>
+    </div>
+
+    <div class="board-wrap" id="boardWrap">
+      <div class="empty-state"><b>No plan yet</b>Choose an entry point and start term, then hit &ldquo;Generate plan.&rdquo;</div>
+    </div>
+
+    <p class="disclaimer">
+      <strong>A planning aid, not an official program of study.</strong>
+      This tool is here to explore possible paths through the doctoral program. Actual course
+      offerings vary from year to year and depend on enrollment demand, faculty availability,
+      and department needs &mdash; a course shown here may be rescheduled or not offered at all.
+      Milestone timing (preliminary exam, prospectus, defense) depends on committee
+      availability and the pace of the student&rsquo;s own research, and cannot be scheduled
+      from a course grid alone. Nothing here is a guarantee. Confirm the sequence with the
+      major professor and the Graduate School&rsquo;s current requirements before filing a
+      program of study.
+    </p>
+  </main>
+
+  <section class="admin">
+    <button class="admin-toggle" id="toggleAdmin">
+      <span class="admin-toggle-label">Curriculum setup</span>
+      <span class="admin-toggle-sub">Course list, offering cycles, milestones, dissertation hours, distribution minimums</span>
+      <span class="admin-chevron">&#9662;</span>
+    </button>
+
+    <div class="admin-body" id="adminBody" hidden>
+      <div class="admin-grid">
+        <div>
+          <h2 class="section-title">Course catalog</h2>
+          <div id="catalogList" class="catalog-list"></div>
+          <button class="btn btn-ghost" id="toggleAddCourse" style="width:100%;margin-top:12px;">+ Add a course</button>
+          <div class="add-course-form" id="addCourseForm" style="display:none;">
+            <div class="field">
+              <label>Course name</label>
+              <input type="text" id="newCourseName" placeholder="e.g. Multivariate Analysis in Education">
+            </div>
+            <div class="row3">
+              <div class="field">
+                <label>Catalog code</label>
+                <input type="text" id="newCourseCode" placeholder="EPY 9XXX">
+              </div>
+              <div class="field">
+                <label>Credits</label>
+                <input type="number" id="newCourseCredits" value="3">
+              </div>
+              <div class="field">
+                <label>Requirement area</label>
+                <select id="newCourseArea">
+                  <option value="core">Major Core coursework</option>
+                  <option value="concentration">Concentration required</option>
+                  <option value="epy-elective">EPY elective</option>
+                  <option value="psy-elective">PSY elective</option>
+                  <option value="edu-elective">Education elective</option>
+                  <option value="free-elective">Free elective</option>
+                  <option value="dissertation">Dissertation</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Prerequisites</label>
+              <div class="chip-select" id="prereqChips"></div>
+            </div>
+            <div class="field">
+              <label>Terms offered</label>
+              <div class="term-config" id="termConfig">
+                <div class="term-row"><label><input type="checkbox" data-season="Fall"> Fall</label>
+                  <select data-parity="Fall"><option value="any">Every year</option><option value="odd">Odd years</option><option value="even">Even years</option></select></div>
+                <div class="term-row"><label><input type="checkbox" data-season="Spring"> Spring</label>
+                  <select data-parity="Spring"><option value="any">Every year</option><option value="odd">Odd years</option><option value="even">Even years</option></select></div>
+                <div class="term-row"><label><input type="checkbox" data-season="Summer"> Summer</label>
+                  <select data-parity="Summer"><option value="any">Every year</option><option value="odd">Odd years</option><option value="even">Even years</option></select></div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Elective pool(s) &mdash; leave blank for a required course</label>
+              <input type="text" id="newCoursePool" placeholder="e.g. 'advanced-methods' or 'epy-elective, cognate'">
+              <p class="hint">Give two or more courses the same pool name to make them a &ldquo;choose from&rdquo; group. A course can sit in more than one pool (comma-separated) if it can satisfy either slot.</p>
+            </div>
+            <button class="btn btn-ghost" id="addCourseBtn" style="width:100%;margin-top:6px;">+ Add to catalog</button>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-title">Elective pools</h2>
+          <div id="poolConfig"></div>
+
+          <h2 class="section-title">Dissertation hours</h2>
+          <div class="row2">
+            <div class="field">
+              <label>Total hours required</label>
+              <input type="number" id="dissTotal" value="20" min="0">
+            </div>
+            <div class="field">
+              <label>Max per term</label>
+              <input type="number" id="dissMax" value="10" min="1">
+            </div>
+          </div>
+          <div class="field">
+            <label>Minimum per term once enrolled</label>
+            <input type="number" id="dissMin" value="3" min="1">
+          </div>
+          <p class="hint">Hours are spread across terms after admission to candidacy, filling whatever credit room is left in each term. Adjust any term directly on the map with the &minus; / + controls.</p>
+
+          <h2 class="section-title">Milestones</h2>
+          <div id="gateConfig"></div>
+
+          <h2 class="section-title">Distribution minimums</h2>
+          <div id="areaConfig"></div>
+          <p class="hint">Minimum hours the program of study must show in each area. The tally under the map compares planned hours against these.</p>
+
+          <button class="btn btn-ghost" id="clearBtn" style="width:100%;margin-top:20px;">Reset to default curriculum</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+// ============================================================================
+//  DEFAULT CATALOG — placeholder doctoral curriculum.
+//  Built out from the M.S. catalog plus the usual doctoral additions.
+//  Verify every code, credit count, offering cycle, and hour minimum against
+//  the current catalog before this goes in front of a student.
+// ============================================================================
+function off(season,parity){ return {season, parity: parity||'any'}; }
+
+const DEFAULT_CATALOG = [
+  // ===== Educational Psychology Major Core — 46 hrs (26 coursework + 20 dissertation) =====
+  {id:'k1', kind:'course', name:'Educational and Psychological Statistics', code:'EPY 6214', abbr:'Stats 1', credits:4, area:'core', prereqs:[], offerings:[off('Fall'),off('Spring')], track:'core', pools:[]},
+  {id:'k2', kind:'course', name:'Intermediate Educational and Psychological Statistics', code:'EPY 8214', abbr:'Stats 2', credits:4, area:'core', prereqs:['k1'], offerings:[off('Spring')], track:'core', pools:[]},
+  {id:'k3', kind:'course', name:'Psychological Testing in Educational and Related Settings', code:'EPY 8263', abbr:'Psych Testing', credits:3, area:'core', prereqs:[], offerings:[off('Spring','odd')], track:'core', pools:[]},
+  {id:'k4', kind:'course', name:'Cognitive and Affective Development', code:'EPY 8293', abbr:'Cognitive & Affective Dev', credits:3, area:'core', prereqs:[], offerings:[off('Fall','even')], track:'core', pools:[]},
+  {id:'k5', kind:'course', name:'Psychometric Theory', code:'EPY 8513', abbr:'Psychometric Theory', credits:3, area:'core', prereqs:['k1','k2','k3'], offerings:[off('Spring')], track:'core', pools:[]},
+  {id:'k6', kind:'course', name:'Multivariate Analysis in Educational Research', code:'EPY 9213', abbr:'Stats 3', credits:3, area:'core', prereqs:['k2'], offerings:[off('Fall')], track:'core', pools:[]},
+  {id:'k7', kind:'course', name:'Seminar in Contemporary Issues in Educational Psychology', code:'EPY 9723', abbr:'Ed Psych Seminar', credits:3, area:'core', prereqs:[], offerings:[off('Spring','even')], track:'core', pools:[]},
+  {id:'k8', kind:'course', name:'Educational Research Design', code:'EDF 9373', abbr:'Ed Research Design', credits:3, area:'core', prereqs:['n6','k2'], offerings:[off('Summer')], track:'core', pools:[]},
+  {id:'k9', kind:'dissertation', name:'Dissertation Research in Educational Psychology', code:'EPY 9000', abbr:'Dissertation Research', credits:0, area:'dissertation', prereqs:[], offerings:[off('Fall'),off('Spring')], track:'core', pools:[]},
+
+  // ===== General Educational Psychology Concentration — Required, 27 hrs =====
+  {id:'n1', kind:'course', name:'Applications of Learning Theories in Educational and Related Settings', code:'EPY 6033', abbr:'Learning Theories', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall'),off('Spring')], track:'core', pools:[]},
+  {id:'n2', kind:'course', name:'Personal and Motivational Factors in Education Related Settings', code:'EPY 6073', abbr:'Motivation', credits:3, area:'concentration', prereqs:[], offerings:[off('Spring','odd')], track:'core', pools:[]},
+  {id:'n3', kind:'course', name:'Psychological Foundations of Education', code:'EPY 8223', abbr:'Ed Psych Foundations', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall','odd')], track:'core', pools:[]},
+  {id:'n4', kind:'course', name:'Practicum in Teaching with Educational Psychology', code:'EPY 8533', abbr:'Teaching Practicum', credits:3, area:'concentration', prereqs:['n3'], offerings:[off('Spring','odd')], track:'core', pools:[]},
+  {id:'n5', kind:'course', name:'Applied Research Seminar', code:'EPY 9263', abbr:'Applied Research Sem', credits:3, area:'concentration', prereqs:['k1','n6','k8'], offerings:[off('Fall','even')], track:'core', pools:[]},
+  {id:'n6', kind:'course', name:'Introduction to Research in Educational Psychology', code:'EPY 6513', abbr:'Intro to Research', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall','odd')], track:'core', pools:[]},
+  {id:'n7', kind:'course', name:'Introduction to Qualitative Research', code:'EDF 9453', abbr:'Qual 1', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall'),off('Spring')], track:'core', pools:[]},
+  {id:'n8', kind:'course', name:'Qualitative Data Collection in Education', code:'EDF 9463', abbr:'Qual 2', credits:3, area:'concentration', prereqs:['n7'], offerings:[off('Fall')], track:'core', pools:[]},
+  {id:'n9', kind:'course', name:'Qualitative Data Analysis', code:'EDF 9473', abbr:'Qual 3', credits:3, area:'concentration', prereqs:['n8'], offerings:[off('Fall'),off('Spring')], track:'core', pools:[], byRequest:true},
+
+  // ===== Educational Psychology Electives — 6 hrs, any two EPY courses =====
+  {id:'p1', kind:'course', name:'Creativity and Innovation', code:'EPY 6553', abbr:'Creativity & Innovation', credits:3, area:'epy-elective', prereqs:[], offerings:[off('Spring','even')], track:'core', pools:['epy-elective']},
+  {id:'p2', kind:'course', name:'Psychology of the Gifted', code:'EPY 8523', abbr:'Psych of the Gifted', credits:3, area:'epy-elective', prereqs:[], offerings:[off('Spring','even')], track:'core', pools:['epy-elective']},
+
+  // ===== Psychology Electives — 6 hrs, any two PSY courses =====
+  {id:'y1', kind:'course', name:'PSY elective (advisor-approved)', code:'PSY ___', abbr:'PSY elective', credits:3, area:'psy-elective', prereqs:[], offerings:[off('Fall'),off('Spring')], track:'core', pools:['psy-elective'], placeholder:true},
+  {id:'y2', kind:'course', name:'PSY elective II (advisor-approved)', code:'PSY ___', abbr:'PSY elective II', credits:3, area:'psy-elective', prereqs:[], offerings:[off('Fall'),off('Spring')], track:'core', pools:['psy-elective'], placeholder:true},
+
+  // ===== Education Elective — 3 hrs, one EDF / EDX / EDE course =====
+  {id:'u1', kind:'course', name:'Education elective (EDF, EDX, or EDE — advisor-approved)', code:'EDF/EDX/EDE', abbr:'Education elective', credits:3, area:'edu-elective', prereqs:[], offerings:[off('Fall'),off('Spring')], track:'core', pools:['edu-elective'], placeholder:true},
+
+  // ===== Free Elective — 3 hrs =====
+  {id:'z1', kind:'course', name:'Free elective (advisor-approved)', code:'___', abbr:'Free elective', credits:3, area:'free-elective', prereqs:[], offerings:[off('Fall'),off('Spring')], track:'core', pools:['free-elective'], placeholder:true},
+];
+
+// Milestones are gates, not courses: they consume no credit room and no course
+// slot, but nothing downstream can happen until they clear.
+const DEFAULT_GATES = [
+  {id:'g1', kind:'milestone', name:'Preliminary Exam', order:1,
+   gateAfter:'all-coursework', offset:0, track:'core',
+   note:'Taken at or near the end of formal coursework. Written and oral components are scheduled by the committee.'},
+  {id:'g2', kind:'milestone', name:'Admission to Candidacy', order:2,
+   gateAfter:['g1'], offset:0, track:'core',
+   note:'Follows a passed preliminary exam. Dissertation hours begin here.'},
+  {id:'g3', kind:'milestone', name:'Prospectus / Proposal Defense', order:3,
+   gateAfter:['g2'], offset:1, track:'core',
+   note:'Committee approves the study before data collection begins. IRB approval follows.'},
+  {id:'g4', kind:'milestone', name:'Dissertation Defense', order:4,
+   gateAfter:'dissertation-complete', offset:0, minAfter:{gate:'g3', terms:1}, track:'core',
+   note:'Scheduled once the 20 dissertation hours are complete and the committee signs off on a full draft.'},
+];
+
+const DEFAULT_POOLS = {
+  'epy-elective':  {label:'EPY electives (choose 2)', pick:2},
+  'psy-elective':  {label:'PSY electives (choose 2)', pick:2},
+  'edu-elective':  {label:'Education elective — EDF/EDX/EDE (choose 1)', pick:1},
+  'free-elective': {label:'Free elective (choose 1)', pick:1}
+};
+
+// Mirrors the program of study exactly: 46 + 45 = 91 hrs.
+const DEFAULT_AREAS = {
+  'core':          {label:'Major Core coursework', min:26, group:'Educational Psychology Major Core — 46 hrs'},
+  'dissertation':  {label:'Dissertation (EPY 9000)', min:20, group:'Educational Psychology Major Core — 46 hrs'},
+  'concentration': {label:'Concentration required', min:27, group:'General Ed Psych Concentration — 45 hrs'},
+  'epy-elective':  {label:'EPY electives', min:6, group:'General Ed Psych Concentration — 45 hrs'},
+  'psy-elective':  {label:'PSY electives', min:6, group:'General Ed Psych Concentration — 45 hrs'},
+  'edu-elective':  {label:'Education elective', min:3, group:'General Ed Psych Concentration — 45 hrs'},
+  'free-elective': {label:'Free elective', min:3, group:'General Ed Psych Concentration — 45 hrs'}
+};
+
+const DEFAULT_TOTAL = 91;
+
+// ---------------- Mutable state ----------------
+let catalog = JSON.parse(JSON.stringify(DEFAULT_CATALOG));
+let gates   = JSON.parse(JSON.stringify(DEFAULT_GATES));
+let pools   = JSON.parse(JSON.stringify(DEFAULT_POOLS));
+let areas   = JSON.parse(JSON.stringify(DEFAULT_AREAS));
+let total   = DEFAULT_TOTAL;
+
+let selectedPrereqs = new Set();
+let completed = new Set();          // transferred, waived, or already finished
+let selectedTrackVal = 'core';
+let currentTrack = 'general';       // one concentration today; the field is here
+                                    // so a second one is a data change, not a code change.
+let plan = null;
+let overrides = {};                 // manual course moves
+let dissOverrides = {};             // manual dissertation-hour edits, by term index
+let focusedId = null;               // course whose prerequisite chain is being traced
+
+function uid(){ return 'c' + Math.random().toString(36).slice(2,9); }
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=String(s); return d.innerHTML; }
+function catalogName(id){
+  const c=catalog.find(x=>x.id===id); if(c) return c.name;
+  const g=gates.find(x=>x.id===id); if(g) return g.name;
+  return '(removed)';
+}
+function num(id, fallback){ const v = parseInt(document.getElementById(id).value); return isNaN(v) ? fallback : v; }
+function activeCatalog(){ return catalog.filter(c => c.track==='core' || c.track===currentTrack); }
+function activeGates(){ return gates.filter(g => g.track==='core' || g.track===currentTrack).sort((a,b)=>a.order-b.order); }
+
+// A narrow column can't carry "Fall (odd yrs)". The map uses this short form;
+// the setup drawer keeps the full one.
+function offeringsShort(offerings){
+  return offerings.map(o => o.parity==='any' ? o.season.slice(0,2) : `${o.season.slice(0,2)} ${o.parity}`).join(' · ');
+}
+
+function offeringsLabel(offerings){
+  return offerings.map(o => o.parity==='any' ? o.season : `${o.season} (${o.parity} yrs)`).join(', ');
+}
+
+// A course offered in exactly one season on an odd/even cycle comes around once
+// every two years — missing that window costs two years, not one term.
+function isBottleneck(course){
+  return course.offerings.length===1 && course.offerings[0].parity !== 'any';
+}
+
+// ---------------- Track toggle ----------------
+function updateBrand(){
+  document.getElementById('brandSub').textContent =
+    `Ph.D. Educational Psychology · General concentration · ${total} hrs`;
+}
+
+// ---------------- Catalog rendering ----------------
+const AREA_ORDER = ['core','dissertation','concentration','epy-elective','psy-elective','edu-elective','free-elective'];
+
+function renderCatalog(){
+  const list = document.getElementById('catalogList');
+  const visible = activeCatalog();
+  let html = '';
+
+  let seenGroup = null;
+  AREA_ORDER.forEach(a=>{
+    const inArea = visible.filter(c=>c.area===a);
+    if(!inArea.length) return;
+    if(areas[a]?.group && areas[a].group !== seenGroup){
+      seenGroup = areas[a].group;
+      html += `<div class="catalog-group-head">${escapeHtml(seenGroup)}</div>`;
+    }
+    html += `<div class="catalog-group-label">${escapeHtml(areas[a]?.label||a)} &middot; ${areas[a]?.min||0} hrs</div>`;
+    html += inArea.map(c => `
+      <div class="catalog-item ${c.kind==='dissertation'?'diss':((c.pools&&c.pools.length)?'pool':'')}">
+        <button class="ci-remove" data-remove="${c.id}" title="Remove course">×</button>
+        <div class="ci-top">
+          <span class="ci-code">${c.code ? escapeHtml(c.code) : '—'}</span>
+          <span class="ci-credits">${c.kind==='dissertation' ? 'variable' : c.credits+' cr'}</span>
+        </div>
+        <div class="ci-title">${escapeHtml(c.name)}
+          ${(c.pools||[]).map(pid=>`<span class="pool-tag">${escapeHtml((pools[pid]?.label||pid).split(' (')[0])}</span>`).join('')}
+          ${c.kind!=='dissertation' && isBottleneck(c)?`<span class="bottleneck-tag" title="Offered only once every two years">⏳ once/2 yrs</span>`:''}
+          ${c.byRequest?`<span class="request-tag">by request</span>`:''}
+          ${c.verify?`<span class="verify-tag" title="${escapeHtml(c.verify)}">unconfirmed</span>`:''}
+        </div>
+        <div class="ci-meta">${offeringsLabel(c.offerings)}${c.prereqs.length ? '<br>requires ' + c.prereqs.map(id=>catalogName(id)).join(', ') : ''}</div>
+      </div>
+    `).join('');
+  });
+
+  const ag = activeGates();
+  if(ag.length){
+    html += `<div class="catalog-group-label">Milestones</div>`;
+    html += ag.map(g=>`
+      <div class="catalog-item gate">
+        <div class="ci-top"><span class="ci-code" style="font-size:15px;">${escapeHtml(g.name)}</span></div>
+        <div class="ci-meta">${g.gateAfter==='all-coursework' ? 'After all coursework'
+          : g.gateAfter==='dissertation-complete' ? 'After dissertation hours complete'
+          : 'After ' + g.gateAfter.map(catalogName).join(', ')}${g.offset ? ` · +${g.offset} term${g.offset>1?'s':''}` : ''}</div>
+      </div>`).join('');
+  }
+
+  list.innerHTML = html || '<p style="font-size:12px;color:var(--ink-soft);font-family:var(--mono);">No courses for this entry point yet.</p>';
+
+  list.querySelectorAll('[data-remove]').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const id = e.target.getAttribute('data-remove');
+      catalog = catalog.filter(c=>c.id!==id);
+      catalog.forEach(c=> c.prereqs = c.prereqs.filter(p=>p!==id));
+      renderCatalog();
+    });
+  });
+  renderPrereqChips();
+  renderPools();
+  renderGateConfig();
+  renderAreaConfig();
+}
+
+function renderPrereqChips(){
+  const wrap = document.getElementById('prereqChips');
+  const visible = activeCatalog().filter(c=>c.kind==='course');
+  if(!visible.length){ wrap.innerHTML = '<span style="font-size:11.5px;color:var(--ink-soft);font-family:var(--mono);">No courses yet</span>'; return; }
+  wrap.innerHTML = visible.map(c => `<div class="chip ${selectedPrereqs.has(c.id)?'active':''}" data-prereq="${c.id}">${escapeHtml(c.code||c.name)}</div>`).join('');
+  wrap.querySelectorAll('[data-prereq]').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      const id = chip.getAttribute('data-prereq');
+      if(selectedPrereqs.has(id)) selectedPrereqs.delete(id); else selectedPrereqs.add(id);
+      renderPrereqChips();
+    });
+  });
+}
+
+function renderPools(){
+  const wrap = document.getElementById('poolConfig');
+  const activePoolIds = new Set();
+  activeCatalog().forEach(c=>(c.pools||[]).forEach(pid=>activePoolIds.add(pid)));
+  if(activePoolIds.size===0){ wrap.innerHTML = '<p class="hint">No elective pools defined for this entry point.</p>'; return; }
+  wrap.innerHTML = Array.from(activePoolIds).map(pid=>{
+    const p = pools[pid] || {label:pid, pick:1};
+    const members = catalog.filter(c=>(c.pools||[]).includes(pid));
+    return `<div class="field">
+      <label>${escapeHtml(p.label)}</label>
+      <div class="row2">
+        <input type="number" min="0" max="${members.length}" value="${p.pick}" data-pool-pick="${pid}">
+        <span class="hint" style="margin-top:9px;">of ${members.length} courses</span>
+      </div>
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('[data-pool-pick]').forEach(inp=>{
+    inp.addEventListener('change', e=>{
+      const pid = e.target.getAttribute('data-pool-pick');
+      if(!pools[pid]) pools[pid] = {label:pid, pick:1};
+      pools[pid].pick = parseInt(e.target.value)||0;
+      if(plan) generatePlan();
+    });
+  });
+}
+
+function renderGateConfig(){
+  const wrap = document.getElementById('gateConfig');
+  wrap.innerHTML = activeGates().map(g=>`
+    <div class="gate-config">
+      <h4>${escapeHtml(g.name)}</h4>
+      <p class="hint">${g.gateAfter==='all-coursework' ? 'Placed after the last scheduled course.'
+        : g.gateAfter==='dissertation-complete' ? 'Placed in the term dissertation hours finish.'
+        : 'Placed after ' + g.gateAfter.map(catalogName).join(', ') + '.'}</p>
+      <div class="row2">
+        <div class="field" style="margin-bottom:0;">
+          <label>Terms after</label>
+          <input type="number" min="0" value="${g.offset||0}" data-gate-offset="${g.id}">
+        </div>
+        ${g.minAfter ? `<div class="field" style="margin-bottom:0;">
+          <label>Min terms after ${escapeHtml(catalogName(g.minAfter.gate))}</label>
+          <input type="number" min="0" value="${g.minAfter.terms}" data-gate-minafter="${g.id}">
+        </div>` : '<div></div>'}
+      </div>
+    </div>`).join('');
+  wrap.querySelectorAll('[data-gate-offset]').forEach(inp=>{
+    inp.addEventListener('change', e=>{
+      const g = gates.find(x=>x.id===e.target.getAttribute('data-gate-offset'));
+      if(g){ g.offset = parseInt(e.target.value)||0; if(plan) generatePlan(); }
+    });
+  });
+  wrap.querySelectorAll('[data-gate-minafter]').forEach(inp=>{
+    inp.addEventListener('change', e=>{
+      const g = gates.find(x=>x.id===e.target.getAttribute('data-gate-minafter'));
+      if(g&&g.minAfter){ g.minAfter.terms = parseInt(e.target.value)||0; if(plan) generatePlan(); }
+    });
+  });
+}
+
+function renderAreaConfig(){
+  const wrap = document.getElementById('areaConfig');
+  let seen = null;
+  wrap.innerHTML = `<div class="field">
+      <label>Total hours in the program of study</label>
+      <input type="number" min="0" value="${total}" data-total-hrs>
+    </div>` + AREA_ORDER.map(a=>{
+      let head = '';
+      if(areas[a].group !== seen){ seen = areas[a].group; head = `<div class="catalog-group-label">${escapeHtml(seen)}</div>`; }
+      return head + `<div class="field">
+        <label>${escapeHtml(areas[a].label)} &mdash; minimum hrs</label>
+        <input type="number" min="0" value="${areas[a].min}" data-area-min="${a}">
+      </div>`;
+    }).join('');
+  wrap.querySelector('[data-total-hrs]').addEventListener('change', e=>{
+    total = parseInt(e.target.value)||0;
+    updateBrand(); if(plan) renderBoard();
+  });
+  wrap.querySelectorAll('[data-area-min]').forEach(inp=>{
+    inp.addEventListener('change', e=>{
+      areas[e.target.getAttribute('data-area-min')].min = parseInt(e.target.value)||0;
+      if(plan) renderBoard();
+    });
+  });
+}
+
+// ---------------- Admin wiring ----------------
+document.getElementById('toggleAdmin').addEventListener('click', ()=>{
+  const body = document.getElementById('adminBody');
+  const btn = document.getElementById('toggleAdmin');
+  const open = !body.hidden;
+  body.hidden = open;
+  btn.classList.toggle('open', !open);
+});
+
+document.getElementById('toggleAddCourse').addEventListener('click', ()=>{
+  const form = document.getElementById('addCourseForm');
+  const btn = document.getElementById('toggleAddCourse');
+  const open = form.style.display !== 'none';
+  form.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? '+ Add a course' : '– Hide add-course form';
+});
+
+document.getElementById('addCourseBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('newCourseName').value.trim();
+  const code = document.getElementById('newCourseCode').value.trim();
+  const credits = parseFloat(document.getElementById('newCourseCredits').value) || 3;
+  const area = document.getElementById('newCourseArea').value;
+  const poolNames = document.getElementById('newCoursePool').value.trim()
+    ? document.getElementById('newCoursePool').value.split(',').map(s=>s.trim()).filter(Boolean)
+    : [];
+  if(!name){ document.getElementById('newCourseName').focus(); return; }
+
+  const offerings = [];
+  document.querySelectorAll('#termConfig .term-row').forEach(row=>{
+    const cb = row.querySelector('input[type=checkbox]');
+    const sel = row.querySelector('select');
+    if(cb.checked) offerings.push(off(cb.getAttribute('data-season'), sel.value));
+  });
+  if(offerings.length===0){ alert('Select at least one term this course is offered.'); return; }
+
+  catalog.push({
+    id: uid(), kind:'course', name, code, credits, area,
+    prereqs: Array.from(selectedPrereqs),
+    offerings, track: selectedTrackVal, pools: poolNames
+  });
+  poolNames.forEach(pid=>{ if(!pools[pid]) pools[pid] = {label:pid, pick:1}; });
+
+  document.getElementById('newCourseName').value = '';
+  document.getElementById('newCourseCode').value = '';
+  document.getElementById('newCourseCredits').value = 3;
+  document.getElementById('newCoursePool').value = '';
+  document.querySelectorAll('#termConfig input[type=checkbox]').forEach(cb=>cb.checked=false);
+  selectedPrereqs = new Set();
+  renderCatalog();
+  document.getElementById('addCourseForm').style.display = 'none';
+  document.getElementById('toggleAddCourse').textContent = '+ Add a course';
+});
+
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  if(!confirm('Reset the catalog, milestones, and hour minimums back to the defaults?')) return;
+  location.reload();
+});
+
+['dissTotal','dissMax','dissMin'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', ()=>{ if(plan) generatePlan(); });
+});
+
+// ============================================================================
+//  SCHEDULING ENGINE
+// ============================================================================
+function offeringMatches(offerings, term, year){
+  return offerings.some(o => o.season===term && (o.parity==='any' || (o.parity==='odd' ? year%2!==0 : year%2===0)));
+}
+
+// Summer is an ordinary enrollment term. It has to be: EDF 9373 is a required
+// Major Core course and summer is the only term it runs.
+// A course taught only in summer gets no column of its own; it attaches to the
+// Spring term it follows. Anything depending on it can then sit in the next Fall
+// — the real sequence — and its own prerequisites may share that Spring term,
+// because Spring finishes before summer begins.
+function summerOnly(c){ return c.offerings.length > 0 && c.offerings.every(o => o.season === 'Summer'); }
+function prereqGap(c){ return summerOnly(c) ? 0 : 1; }
+function courseworkSummersOn(){ return false; }
+
+function buildSemesterSequence(){
+  const startTerm = document.getElementById('startTerm').value;
+  const startYear = num('startYear', 2026);
+  const numTerms  = num('numYears', 5) * 2;   // Fall + Spring per academic year
+  // Summer is never a column. A summer-only course attaches to the Spring term
+  // it follows instead — see summerOnly() and feasibleIdx().
+  const cycle = ['Fall','Spring'];
+  // Fall Y is followed by Spring Y+1 and Summer Y+1 — same academic year, one
+  // calendar year apart. seasonOffset carries that gap.
+  const seasonOffset = {Fall:0, Spring:1, Summer:1};
+  let startIdx = cycle.indexOf(startTerm);
+  if(startIdx===-1) startIdx=0;
+  const academicYear0 = startYear - seasonOffset[cycle[startIdx]];
+  const semesters = [];
+  for(let i=0;i<numTerms;i++){
+    const idx = startIdx + i;
+    const term = cycle[idx % cycle.length];
+    const cyclesPassed = Math.floor(idx / cycle.length);
+    const year = academicYear0 + cyclesPassed + seasonOffset[term];
+    semesters.push({term, year, label:`${term} ${year}`, acad: term==='Fall' ? year : year-1});
+  }
+  // Academic year is anchored on its Fall: Spring 2027 belongs to 2026-27, not to
+  // 2027-28. Numbering off the raw index would mislabel any Spring start.
+  const keys = Array.from(new Set(semesters.map(s=>s.acad))).sort((a,b)=>a-b);
+  semesters.forEach(s=>{ s.yearNo = keys.indexOf(s.acad) + 1; });
+  return semesters;
+}
+
+// Course level from catalog code: "EPY 8214" -> 8000. Lower levels sequence first.
+function courseLevel(c){
+  const m = (c.code||'').match(/\b([1-9])\d{3}\b/);
+  return m ? parseInt(m[1])*1000 : 8000;
+}
+
+function feasibleIdx(c, semesters){
+  const out = [];
+  if(summerOnly(c)){
+    // Summer YYYY follows Spring YYYY, so an odd/even cycle is read off Spring.
+    semesters.forEach((s,i)=>{
+      if(s.term !== 'Spring') return;
+      if(c.offerings.some(o => o.parity==='any' || (o.parity==='odd' ? s.year%2!==0 : s.year%2===0))) out.push(i);
+    });
+    return out;
+  }
+  semesters.forEach((s,i)=>{ if(offeringMatches(c.offerings, s.term, s.year)) out.push(i); });
+  return out;
+}
+
+function generatePlan(){
+  overrides = {};
+  dissOverrides = {};
+  const semesters  = buildSemesterSequence();
+  const maxCourses = num('maxCourses', 3);
+  const maxCredits = Infinity;   // course count is the only cap now
+
+  const active  = activeCatalog();
+  const courses = active.filter(c => c.kind==='course');
+  const diss    = active.find(c => c.kind==='dissertation');
+  const gateList = activeGates();
+
+  const byId = {}; courses.forEach(c=>byId[c.id]=c);
+  const toSchedule = courses.filter(c => !completed.has(c.id));
+
+  // ---- Earliest term a course could sit in, given its prerequisite chain ----
+  const floorMemo = {};
+  function floorOf(c, seen){
+    if(floorMemo[c.id] !== undefined) return floorMemo[c.id];
+    seen = seen || new Set();
+    if(seen.has(c.id)) return 0;              // guard against a circular definition
+    seen.add(c.id);
+    let fl = 0;
+    c.prereqs.forEach(pid=>{
+      if(completed.has(pid)) return;          // already satisfied — imposes no floor
+      const pc = byId[pid]; if(!pc) return;
+      const pf = floorOf(pc, seen);
+      const pFeas = feasibleIdx(pc, semesters).filter(i=>i>=pf );
+      if(pFeas.length) fl = Math.max(fl, pFeas[0] + prereqGap(c));
+    });
+    floorMemo[c.id] = fl;
+    return fl;
+  }
+
+  // Degrees of freedom = how many terms could actually hold this course.
+  // DOF of 1 means no choice at all: it gets locked into that term.
+  const meta = {};
+  courses.forEach(c=>{
+    const fl = floorOf(c);
+    const feasible = feasibleIdx(c, semesters).filter(i=>i>=fl );
+    meta[c.id] = {floor:fl, feasible, dof:feasible.length, level:courseLevel(c)};
+  });
+
+  const scheduledIn = new Map();
+  const load  = semesters.map(()=>0);
+  const count = semesters.map(()=>0);
+  const lockNotes = {};
+  const overloadedTerms = new Set();
+  const poolCounts = {};
+  Object.keys(pools).forEach(pid=>poolCounts[pid]=0);
+  const poolStillNeeded = c => (c.pools||[]).some(pid => poolCounts[pid] < (pools[pid]?.pick ?? 1));
+
+  function claimPool(c){
+    for(const pid of (c.pools||[])){
+      if(poolCounts[pid] < (pools[pid]?.pick ?? 1)){ poolCounts[pid]++; return; }
+    }
+  }
+  // Completed electives satisfy their slot before anything new is picked.
+  courses.filter(c => completed.has(c.id) && c.pools && c.pools.length).forEach(claimPool);
+
+  // Everything takes the earliest workable term. On a master's map you spread
+  // electives to balance the terms; on a doctoral map the opposite is right —
+  // every term coursework runs late is a term dissertation hours can't run, and
+  // candidacy is the gate that governs the whole back half of the degree.
+  // Locked courses may exceed the caps, because there is no alternative for them.
+  function place(c, allowOverload, strategy){
+    if(scheduledIn.has(c.id)) return true;
+    for(const pid of c.prereqs){
+      const pc = byId[pid];
+      if(pc && !completed.has(pid) && !scheduledIn.has(pc.id)) place(pc, allowOverload, 'earliest');
+    }
+    let floor = meta[c.id].floor;
+    c.prereqs.forEach(pid=>{
+      if(scheduledIn.has(pid)) floor = Math.max(floor, scheduledIn.get(pid) + prereqGap(c));
+    });
+    const feasible = meta[c.id].feasible.filter(i => i >= floor);
+    if(!feasible.length) return false;
+    const withRoom = summerOnly(c) ? feasible
+      : feasible.filter(i => count[i] + 1 <= maxCourses && load[i] + c.credits <= maxCredits);
+    let target;
+    if(withRoom.length){
+      target = strategy === 'fill-gap'
+        ? withRoom.slice().sort((a,b)=> count[a]-count[b] || load[a]-load[b] || a-b)[0]
+        : withRoom[0];
+    } else {
+      if(!allowOverload) return false;
+      target = feasible[0];
+      overloadedTerms.add(target);
+    }
+    scheduledIn.set(c.id, target);
+    if(!summerOnly(c)){ load[target] += c.credits; count[target] += 1; }
+    return true;
+  }
+
+  const required  = toSchedule.filter(c => !(c.pools && c.pools.length));
+  const electives = toSchedule.filter(c => c.pools && c.pools.length);
+
+  // Pass 1 — single-possible-term courses claim their slot before anything
+  // flexible can crowd them out.
+  required.filter(c => meta[c.id].dof === 1).forEach(c=>{
+    if(place(c, true, 'earliest')){
+      const idx = scheduledIn.get(c.id);
+      lockNotes[c.id] = `Locked to ${semesters[idx].label} — it's the only term this course is offered inside the planning window.`;
+    }
+  });
+
+  // Pass 2 — remaining required courses, most constrained first, then lower
+  // level first so groundwork lands ahead of 9000-level work.
+  required.filter(c => !scheduledIn.has(c.id))
+    .sort((a,b)=>{
+      const ma = meta[a.id], mb = meta[b.id];
+      if(ma.dof !== mb.dof) return ma.dof - mb.dof;
+      if(ma.level !== mb.level) return ma.level - mb.level;
+      return (mb.feasible[0]??0) - (ma.feasible[0]??0);
+    })
+    .forEach(c => place(c, false, 'earliest'));
+
+  // Pass 3 — electives, filled one pool at a time.
+  // A pool is a choice ("take 2 of these 4"), so it has to be solved as a choice:
+  // for each open slot, take the member that can land soonest. Sorting every
+  // elective into one global list instead lets a wide-open course grab a seat
+  // that the only-offered-Spring-of-even-years course needed, which is how a
+  // single elective ends up stranding the plan two years out.
+  // Tight pools go first — they have the fewest ways to be satisfied.
+  function earliestPlaceable(c){
+    let floor = meta[c.id].floor;
+    c.prereqs.forEach(pid=>{
+      if(scheduledIn.has(pid)) floor = Math.max(floor, scheduledIn.get(pid) + prereqGap(c));
+    });
+    for(const i of meta[c.id].feasible){
+      if(i < floor) continue;
+      if(summerOnly(c) || (count[i] + 1 <= maxCourses && load[i] + c.credits <= maxCredits)) return i;
+    }
+    return null;
+  }
+  function placeAt(c, idx){
+    scheduledIn.set(c.id, idx);
+    if(!summerOnly(c)){ load[idx] += c.credits; count[idx] += 1; }
+  }
+
+  const poolIds = Array.from(new Set(electives.flatMap(c => c.pools || [])));
+  poolIds.sort((a,b)=>{
+    const ms = pid => electives.filter(c => (c.pools||[]).includes(pid));
+    const avg = pid => { const m = ms(pid); return m.length ? m.reduce((s,c)=>s+meta[c.id].dof,0)/m.length : 99; };
+    return avg(a) - avg(b) || ms(a).length - ms(b).length;
+  });
+
+  poolIds.forEach(pid=>{
+    const need = pools[pid]?.pick ?? 1;
+    while(poolCounts[pid] < need){
+      const candidates = electives
+        .filter(c => (c.pools||[]).includes(pid) && !scheduledIn.has(c.id))
+        .map(c => ({c, idx: earliestPlaceable(c)}))
+        .filter(x => x.idx !== null);
+      if(!candidates.length) break;
+      candidates.sort((a,b)=>
+        (a.c.placeholder?1:0) - (b.c.placeholder?1:0) ||   // real courses before blank slots
+        a.idx - b.idx ||                                  // finish the coursework sooner
+        meta[a.c.id].dof - meta[b.c.id].dof ||             // spend the scarce offering first
+        meta[b.c.id].level - meta[a.c.id].level            // advanced work ahead of survey work
+      );
+      placeAt(candidates[0].c, candidates[0].idx);
+      poolCounts[pid]++;
+    }
+  });
+
+  // Pass 4 — compaction. Greedy placement fills terms in order, which can leave a
+  // lone course stranded in a term of its own after the rest of coursework is
+  // done. Every term coursework runs past its natural end is a term candidacy is
+  // delayed, so pull anything forward that has somewhere earlier to go.
+  // Moving a course earlier can never break a dependent: dependents only require
+  // their prerequisite to come sooner.
+  let moved = true, guard = 0;
+  while(moved && guard++ < 30){
+    moved = false;
+    Array.from(scheduledIn.entries())
+      .sort((a,b) => b[1] - a[1])
+      .forEach(([id, at])=>{
+        const c = byId[id]; if(!c) return;
+        let floor = meta[c.id].floor;
+        c.prereqs.forEach(pid=>{
+          if(scheduledIn.has(pid)) floor = Math.max(floor, scheduledIn.get(pid) + prereqGap(c));
+        });
+        for(const i of meta[c.id].feasible){
+          if(i >= at) break;
+          if(i < floor) continue;
+          const fits = summerOnly(c) || (count[i] + 1 <= maxCourses && load[i] + c.credits <= maxCredits);
+          if(fits){
+            if(!summerOnly(c)){ load[at] -= c.credits; count[at] -= 1; }
+            scheduledIn.set(id, i);
+            if(!summerOnly(c)){ load[i] += c.credits; count[i] += 1; }
+            moved = true;
+            return;
+          }
+        }
+      });
+  }
+
+  // ---- Milestones ----
+  // Gates consume no credit room and no course slot; they mark the term in which
+  // the student clears them. A gate that can't fit inside the window is still
+  // shown in the last term, flagged, so the shortfall is visible rather than silent.
+  const gateIdx = {};
+  const gateWarn = {};
+  const lastIdx = semesters.length - 1;
+  const courseTerms = Array.from(scheduledIn.values());
+  const lastCourseworkIdx = courseTerms.length ? Math.max(...courseTerms) : 0;
+
+  function placeGate(g, baseIdx){
+    let target = baseIdx + (g.offset||0);
+    if(g.minAfter && gateIdx[g.minAfter.gate] !== undefined){
+      target = Math.max(target, gateIdx[g.minAfter.gate] + g.minAfter.terms);
+    }
+    if(target > lastIdx){
+      gateWarn[g.id] = `Falls ${target - lastIdx} term${target-lastIdx>1?'s':''} past the end of this window. Add terms to see it land.`;
+      target = lastIdx;
+    }
+    gateIdx[g.id] = target;
+  }
+
+  const preDissGates = gateList.filter(g => g.gateAfter !== 'dissertation-complete');
+  preDissGates.forEach(g=>{
+    let base;
+    if(g.gateAfter === 'all-coursework') base = lastCourseworkIdx;
+    else base = Math.max(0, ...g.gateAfter.map(id => gateIdx[id] ?? scheduledIn.get(id) ?? 0));
+    placeGate(g, base);
+  });
+
+  // ---- Dissertation hours ----
+  // Enrollment opens the term the candidacy gate clears. Hours fill whatever
+  // credit room is left each term, up to the per-term ceiling, until the total
+  // is met — which is how these actually get taken, a few at a time alongside
+  // whatever coursework is still running.
+  const dissSpread = {};
+  let dissShort = 0;
+  let dissStartIdx = null;
+  if(diss){
+    const total  = num('dissTotal', 20);
+    const perMax = num('dissMax', 6);
+    const perMin = num('dissMin', 3);
+    const candidacyGate = gateList.find(g => /candidacy/i.test(g.name))
+                       || gateList.find(g => /prelim|comprehensive/i.test(g.name));
+    dissStartIdx = (candidacyGate && gateIdx[candidacyGate.id] !== undefined
+                     ? gateIdx[candidacyGate.id]
+                     : lastCourseworkIdx) + 1;
+    let remaining = total;
+    for(let i = dissStartIdx; i <= lastIdx && remaining > 0; i++){
+      if(!offeringMatches(diss.offerings, semesters[i].term, semesters[i].year)) continue;
+      const room = Math.max(0, maxCredits - load[i]);
+      let take = Math.min(perMax, remaining, room);
+      // Continuous enrollment: once you're in dissertation hours you take at
+      // least the minimum, even if the term is nominally full.
+      if(take < perMin && remaining >= perMin) take = Math.min(perMin, remaining);
+      if(take <= 0) continue;
+      dissSpread[i] = take;
+      load[i] += take;
+      remaining -= take;
+    }
+    dissShort = remaining;
+  }
+  const dissTerms = Object.keys(dissSpread).map(Number);
+  const dissEndIdx = dissTerms.length ? Math.max(...dissTerms) : lastCourseworkIdx;
+
+  gateList.filter(g => g.gateAfter === 'dissertation-complete').forEach(g=>{
+    placeGate(g, dissEndIdx);
+    if(dissShort > 0) gateWarn[g.id] = `${dissShort} dissertation hr${dissShort>1?'s':''} still unplaced — the defense can't be scheduled until they're complete.`;
+  });
+
+  // ---- Anything still unplaced is a real gap ----
+  const unscheduled = [];
+  const poolExcluded = [];
+  courses.forEach(c=>{
+    if(completed.has(c.id) || scheduledIn.has(c.id)) return;
+    if((c.pools && c.pools.length) && !poolStillNeeded(c)){ poolExcluded.push(c); return; }
+    let reason = 'No remaining term fits inside the planning window.';
+    const missing = c.prereqs.filter(p => !scheduledIn.has(p) && !completed.has(p));
+    if(missing.length){
+      reason = `Waiting on: ${missing.map(catalogName).join(', ')}`;
+    } else if(meta[c.id].dof === 0){
+      reason = `Not offered at all inside this window (${offeringsLabel(c.offerings)}). Extend the number of terms or change the start term.`;
+    } else if(isBottleneck(c)){
+      reason = `⏳ Offered once every two years (${offeringsLabel(c.offerings)}) — every available term is already full. Raise the caps or add a term.`;
+    }
+    unscheduled.push({course:c, reason});
+  });
+
+  plan = {semesters, unscheduled, poolExcluded, scheduledIn, meta, lockNotes,
+          overloadedTerms, gateIdx, gateWarn, dissSpread, dissShort, dissStartIdx, diss};
+  renderBoard();
+}
+
+document.getElementById('generateBtn').addEventListener('click', generatePlan);
+
+// ============================================================================
+//  BOARD RENDERING
+// ============================================================================
+function courseSemesterIndex(courseId){
+  if(overrides.hasOwnProperty(courseId)) return overrides[courseId];
+  return plan.scheduledIn.get(courseId);
+}
+function dissHoursAt(i){
+  if(dissOverrides.hasOwnProperty(i)) return dissOverrides[i];
+  return plan.dissSpread[i] || 0;
+}
+function dissTotalPlanned(){
+  return plan.semesters.reduce((s,_,i)=> s + dissHoursAt(i), 0);
+}
+
+// Point of this: prerequisites and offering cycles don't just decide where a
+// course goes, they decide what happens when a student misses it. A course with
+// a later offering inside the window costs a term; one without costs the plan.
+// How many courses sit downstream of this one, transitively. A cycle-restricted
+// course with dependents doesn't just cost its own delay — everything behind it
+// waits for the next time it comes around, and then for its own next window.
+function dependentCount(c){
+  const all = activeCatalog().filter(x=>x.kind==='course');
+  const seen = new Set([c.id]);
+  let frontier = [c.id], n = 0;
+  while(frontier.length){
+    const next = [];
+    all.forEach(x=>{
+      if(seen.has(x.id)) return;
+      if(x.prereqs.some(p=>frontier.includes(p))){ seen.add(x.id); next.push(x.id); n++; }
+    });
+    frontier = next;
+  }
+  return n;
+}
+
+// Everything upstream and downstream of a course, transitively. Drawing all
+// prerequisite edges at once turned the map into a thicket; tracing one chain at
+// a time is the same information without the overlap.
+function chainOf(id){
+  const all = activeCatalog().filter(x=>x.kind==='course');
+  const byId = {}; all.forEach(x=>byId[x.id]=x);
+  const up = new Set(), down = new Set();
+  (function walkUp(cid){
+    (byId[cid]?.prereqs||[]).forEach(p=>{ if(byId[p] && !up.has(p)){ up.add(p); walkUp(p); } });
+  })(id);
+  (function walkDown(cids){
+    const next = [];
+    all.forEach(x=>{ if(!down.has(x.id) && x.id!==id && x.prereqs.some(p=>cids.includes(p))){ down.add(x.id); next.push(x.id); } });
+    if(next.length) walkDown(next);
+  })([id]);
+  return {up, down, all: new Set([id, ...up, ...down])};
+}
+
+function prereqLabel(c){
+  const names = c.prereqs.map(pid=>{
+    const pc = catalog.find(x=>x.id===pid);
+    return pc ? (pc.code || pc.name) : null;
+  }).filter(Boolean);
+  return names.length ? names.join(', ') : '';
+}
+
+// Card-face version of the slip note: the timing only. Who's waiting downstream
+// is carried by the "!" flag and spelled out when the card is opened.
+function slipShort(r){
+  if(r.level === 'none') return `No later offering in the ${num('numYears',5)}-year frame`;
+  return r.summer ? `If missed: ${r.next} (1 yr)` : `If missed: ${r.next} (+${r.wait} sem)`;
+}
+
+function slipRisk(c, idx){
+  if(c.byRequest) return {level:'ok', text:''};
+  const feas = feasibleIdx(c, plan.semesters);
+  const later = plan.semesters
+    .map((s,i)=>({s,i}))
+    .filter(({i}) => i > idx && feas.includes(i));
+  if(!later.length) return {level:'none', next:null, wait:0, deps:dependentCount(c),
+    text:`Not offered again inside the ${num('numYears',5)}-year frame — a miss here pushes the plan past it.`};
+  // Counted in enrollment semesters, not column positions and not calendar years.
+  // Fall 2026 to Spring 2027 spans a year boundary but is one semester of delay;
+  // Fall 2026 to Fall 2028 is four. Summers only count when coursework runs then.
+  const wait = later[0].i - idx;
+  const label = summerOnly(c) ? `Summer ${later[0].s.year}` : later[0].s.label;
+  const deps = dependentCount(c);
+  const tail = deps ? ` ${deps} later course${deps>1?'s':''} wait${deps>1?'':'s'} on it.` : '';
+  if(deps > 0 && (wait >= 4 || wait >= 2 && deps >= 2))
+    return {level:'wide', deps, next:label, wait, summer:summerOnly(c), text:`If missed, next offered ${label} — ${summerOnly(c) ? 'a year later' : wait + ' semesters later'}.${tail}`};
+  if(wait >= 2) return {level:'soon', deps, next:label, wait, summer:summerOnly(c), text:`If missed, next offered ${label} — ${summerOnly(c) ? 'a year later' : wait + ' semesters later'}.${tail}`};
+  return {level:'ok', deps, next:label, wait, summer:summerOnly(c), text:''};
+}
+
+function validSemesterOptionsHtml(c, selectedIdx){
+  const ok = summerOnly(c)
+    ? (s2,i2) => plan.meta[c.id] && feasibleIdx(c, plan.semesters).includes(i2)
+    : (s2)    => offeringMatches(c.offerings, s2.term, s2.year);
+  return plan.semesters
+    .map((s2,i2)=>({s2,i2}))
+    .filter(({s2,i2}) => ok(s2,i2))
+    .map(({s2,i2})=>`<option value="${i2}" ${i2===selectedIdx?'selected':''}>${summerOnly(c)?`Summer ${s2.year}`:s2.label}</option>`)
+    .join('');
+}
+
+function refreshLegend(){
+  const el = document.getElementById('legendVerify');
+  if(el) el.remove();
+  if(!activeCatalog().some(c=>c.verify)) return;
+  document.getElementById('legend').insertAdjacentHTML('beforeend',
+    `<span id="legendVerify"><span class="dot" style="background:var(--brass-soft)"></span>offering unconfirmed</span>`);
+}
+
+function renderBoard(){
+  const wrap = document.getElementById('boardWrap');
+  const sub  = document.getElementById('mainSubtitle');
+  if(!plan){
+    wrap.innerHTML = `<div class="empty-state"><b>No plan yet</b>Add courses, then hit &ldquo;Generate plan.&rdquo;</div>`;
+    sub.textContent = 'Add courses, then generate a plan.';
+    return;
+  }
+
+  const active = activeCatalog();
+  const courses = active.filter(c=>c.kind==='course');
+  const gateList = activeGates();
+  const maxCourses = num('maxCourses', 3);
+  const maxCredits = Infinity;
+
+  const completedCourses = courses.filter(c => completed.has(c.id));
+  const completedCredits = completedCourses.reduce((s,c)=>s+c.credits,0);
+  const scheduledCourses = courses.filter(c => !completed.has(c.id) && courseSemesterIndex(c.id) !== undefined && courseSemesterIndex(c.id) !== 'opt-out');
+  const plannedCredits = scheduledCourses.reduce((s,c)=>s+c.credits,0);
+  const dissPlanned = dissTotalPlanned();
+
+  const lastGate = gateList[gateList.length-1];
+  const finishIdx = lastGate && plan.gateIdx[lastGate.id] !== undefined
+    ? plan.gateIdx[lastGate.id]
+    : Math.max(0, ...scheduledCourses.map(c=>courseSemesterIndex(c.id)));
+
+  const grandTotal = completedCredits + plannedCredits + dissPlanned;
+  sub.textContent =
+    `${grandTotal} of ${total} hrs`
+    + (completedCredits ? ` (${completedCredits} completed + ${plannedCredits} coursework + ${dissPlanned} dissertation)` : ` (${plannedCredits} coursework + ${dissPlanned} dissertation)`)
+    + ` · defense targeted ${plan.semesters[finishIdx]?.label || '—'}`;
+
+  let html = '';
+
+  // Already-completed coursework is the starting point of the plan, not a
+  // footnote to it, so the panel is always on screen — even when nothing is
+  // ticked. A course taken in a term the map doesn't cover has no other way in.
+  const ordered = AREA_ORDER.flatMap(a => courses.filter(c => c.area === a));
+  html += `<div class="completed-panel">
+    <div class="cp-head">
+      <span class="cp-title">Already completed</span>
+      <span class="cp-hint">Tick anything the student has finished outside this plan &mdash; summer courses, coursework from a prior term. The map re-solves each time.</span>
+      <span class="cp-count ${completedCourses.length?'on':''}">${completedCourses.length} course${completedCourses.length===1?'':'s'} &middot; ${completedCredits} hrs</span>
+    </div>
+    <div class="cp-chips">
+      ${ordered.map(c=>`<button class="cp-chip ${completed.has(c.id)?'done':''}" data-complete-toggle="${c.id}" title="${escapeHtml(c.name)}">
+          <span class="cp-tick">${completed.has(c.id)?'&#10003;':''}</span>${escapeHtml(c.code||c.name)}
+        </button>`).join('')}
+    </div>
+  </div>`;
+
+  const focusedCourse = focusedId ? courses.find(c=>c.id===focusedId) : null;
+  html += `<div class="chain-bar ${focusedCourse?'on':''}">
+    ${focusedCourse
+      ? `<span class="chain-live">Tracing <b>${escapeHtml(focusedCourse.code||focusedCourse.name)}</b></span>
+         <span class="chain-detail">${(()=>{const ch=chainOf(focusedId);
+              return `${ch.up.size} prerequisite${ch.up.size===1?'':'s'} before it &middot; ${ch.down.size} course${ch.down.size===1?'':'s'} waiting on it`;})()}</span>
+         <button class="chain-clear" data-chain-clear>Clear</button>`
+      : `<span class="chain-idle">Click any course to trace what it depends on and what waits on it.</span>`}
+  </div>`;
+  html += `<div class="board" id="board">`;
+  plan.semesters.forEach((sem, si)=>{
+    const allHere     = courses.filter(c => !completed.has(c.id) && courseSemesterIndex(c.id) === si);
+    const coursesHere  = allHere.filter(c => !summerOnly(c));
+    const summerHere   = allHere.filter(c =>  summerOnly(c));
+    const gatesHere   = gateList.filter(g => plan.gateIdx[g.id] === si);
+    const dh = dissHoursAt(si);
+    const creditSum = coursesHere.reduce((s,c)=>s+c.credits,0) + dh;
+    const summerCr  = summerHere.reduce((s,c)=>s+c.credits,0);
+
+    const isEmpty = !allHere.length && !gatesHere.length && !dh;
+    if(isEmpty && sem.term==='Summer'){
+      html += `<div class="semester-col collapsed" data-sem-idx="${si}" title="${sem.label} — no enrollment planned">
+        <div class="collapsed-label">${escapeHtml(sem.label)}</div></div>`;
+      return;
+    }
+    html += `<div class="semester-col" data-sem-idx="${si}">
+      <div class="sem-header">
+        <div class="sem-name">${sem.label}</div>
+        <div class="sem-credits ${(creditSum>maxCredits||coursesHere.length>maxCourses)?'over':''}">${coursesHere.length} course${coursesHere.length===1?'':'s'} &middot; ${creditSum} hrs</div>
+        ${summerCr?`<div class="sem-summer">+ ${summerCr} hrs in Summer ${sem.year}</div>`:''}
+        <div class="sem-year-tag">Year ${sem.yearNo}</div>
+      </div>`;
+
+    allHere.forEach(c=>{
+      const violated = c.prereqs.some(p=>{
+        if(completed.has(p)) return false;
+        const pIdx = courseSemesterIndex(p);
+        if(pIdx===undefined || pIdx==='opt-out') return true;
+        return summerOnly(c) ? pIdx > si : pIdx >= si;
+      });
+      const notOffered = !summerOnly(c) && !offeringMatches(c.offerings, sem.term, sem.year);
+      const invalid  = violated || notOffered;
+      const isLocked = !!plan.lockNotes[c.id];
+      const isElective = !!(c.pools && c.pools.length);
+      const chain = focusedId ? chainOf(focusedId) : null;
+      const isOpen = c.id === focusedId;
+      const risk = slipRisk(c, si);
+      const fcls = !chain ? '' :
+        (isOpen ? 'chain-root' : chain.up.has(c.id) ? 'chain-up' : chain.down.has(c.id) ? 'chain-down' : 'dimmed');
+      html += `<div class="course-card ${invalid?'invalid':''} ${isElective?'pool':'required'} ${isLocked?'locked':''} ${summerOnly(c)?'summer-course':''} ${fcls}" data-course-id="${c.id}">
+        <div class="cc-top">
+          <span class="cc-code">${c.code?escapeHtml(c.code):'—'}</span>
+          <span class="cc-credits">${c.credits}</span>
+        </div>
+        <div class="cc-title" title="${escapeHtml(c.name)}">${escapeHtml(c.abbr || c.name)}</div>
+        <div class="cc-meta"><span>${offeringsShort(c.offerings)}</span><span class="cc-flags">${
+            isBottleneck(c)?`<i title="Offered once every two years">⏳</i>`:''}${
+            summerOnly(c)?`<i title="Taken the following summer">☀</i>`:''}${
+            c.byRequest?`<i title="Offered by request only">✎</i>`:''}${
+            isLocked?`<i title="Only term available">⚿</i>`:''}${
+            risk.level==='wide'?`<i class="flag-risk" title="${escapeHtml(risk.text)}">!</i>`:''}${
+            c.verify?`<i class="flag-verify" title="Unconfirmed">?</i>`:''}</span></div>
+        ${invalid?`<div class="cc-warning">⚠ ${violated?'Prereq missing':'Not offered'}</div>`:''}
+        ${risk.level==='ok'?'':`<div class="cc-slip ${risk.level}">${escapeHtml(slipShort(risk))}</div>`}
+        ${isOpen ? `
+          <div class="cc-fullname">${escapeHtml(c.name)}</div>
+          ${prereqLabel(c)?`<div class="cc-prereq"><span>after</span> ${escapeHtml(prereqLabel(c))}</div>`:''}
+          ${summerOnly(c)?`<div class="cc-summer">Taken in Summer ${sem.year}</div>`:''}
+          ${c.byRequest?`<div class="cc-request">By request only — arrange in advance.</div>`:''}
+          ${c.verify?`<div class="cc-verify">Verify ${escapeHtml(c.verify)}</div>`:''}
+          ${risk.deps?`<div class="cc-deps">${risk.deps} later course${risk.deps>1?'s':''} wait${risk.deps>1?'':'s'} on this</div>`:''}
+          ${isLocked?`<div class="cc-locknote">${escapeHtml(plan.lockNotes[c.id])}</div>`:''}
+          ${isLocked ? `<div class="cc-lockfixed">Fixed — no other term</div>` : `<select class="move-select" data-move="${c.id}">
+            ${isElective ? `<option value="opt-out">— Opt out —</option>` : ''}
+            ${validSemesterOptionsHtml(c, si)}
+          </select>`}
+          <label class="cc-done"><input type="checkbox" data-complete="${c.id}"> Mark completed</label>
+        ` : ''}
+      </div>`;
+    });
+
+    // Dissertation hours for this term
+    if(plan.diss && dh > 0){
+      const running = plan.semesters.reduce((s,_,i)=> i<=si ? s + dissHoursAt(i) : s, 0);
+      const total = num('dissTotal', 20);
+      html += `<div class="diss-card">
+        <div class="cc-type">Dissertation</div>
+        <div class="cc-top">
+          <span class="cc-code">${escapeHtml(plan.diss.code||'EPY 9000')}</span>
+        </div>
+        <div class="cc-title" title="${escapeHtml(plan.diss.name)}">${escapeHtml(plan.diss.abbr || plan.diss.name)}</div>
+        <div class="diss-hours">${dh}<small>hrs</small></div>
+        <div class="diss-stepper">
+          <button data-diss-dec="${si}" ${dh<=0?'disabled':''}>&minus;</button>
+          <button data-diss-inc="${si}">+</button>
+          <span class="diss-runtot">${running} / ${total} total</span>
+        </div>
+      </div>`;
+    }
+
+    // Milestone gates
+    gatesHere.forEach(g=>{
+      const warn = plan.gateWarn[g.id];
+      html += `<div class="gate-card ${warn?'blocked':''}" data-gate-id="${g.id}">
+        <div class="gate-eyebrow"><span>Milestone</span></div>
+        <div class="gate-name">${escapeHtml(g.name)}</div>
+        ${g.note?`<div class="gate-note">${escapeHtml(g.note)}</div>`:''}
+        ${warn?`<div class="gate-warn">⚠ ${escapeHtml(warn)}</div>`:''}
+      </div>`;
+    });
+
+    // Open elective slots — only where the term has both a course slot and
+    // credit room, and only offering electives actually taught that term.
+    const summerBlocked = !courseworkSummersOn() && sem.term === 'Summer';
+    if(!summerBlocked && coursesHere.length < maxCourses && creditSum < maxCredits){
+      const options = courses.filter(c =>
+        (c.pools && c.pools.length) &&
+        !completed.has(c.id) &&
+        courseSemesterIndex(c.id) !== si &&
+        offeringMatches(c.offerings, sem.term, sem.year)
+      );
+      html += `<div class="course-card open-slot">
+        <div class="cc-type is-elective">Open slot</div>
+        <div class="cc-opentitle">Room for an elective</div>
+        ${options.length ? `<select class="move-select" data-fill="${si}">
+            <option value="" selected>Choose an elective…</option>
+            ${options.map(c=>`<option value="${c.id}">${escapeHtml(c.code||c.name)} — ${escapeHtml(c.name)}</option>`).join('')}
+          </select>`
+        : `<div class="cc-openempty">No electives offered in ${escapeHtml(sem.term)} ${sem.year}</div>`}
+      </div>`;
+    }
+
+    html += `</div>`;
+  });
+  html += `</div>`;
+
+  if(plan.unscheduled.length){
+    html += `<div class="unscheduled-strip"><h3>Needs more terms (${plan.unscheduled.length})</h3><div class="strip-list">`;
+    plan.unscheduled.forEach(u=>{
+      html += `<div class="strip-card warn"><b>${escapeHtml(u.course.code||u.course.name)}</b><span>${escapeHtml(u.course.name)} — ${escapeHtml(u.reason)}</span></div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  if(plan.dissShort > 0){
+    html += `<div class="unscheduled-strip"><h3>Dissertation hours short</h3><div class="strip-list">
+      <div class="strip-card warn"><b>${plan.dissShort} hrs unplaced</b><span>There isn't room after candidacy for the full requirement. Add terms, raise the credits-per-term cap, or move the comprehensive exam earlier.</span></div>
+    </div></div>`;
+  }
+
+  const stillExcluded = plan.poolExcluded.filter(c => courseSemesterIndex(c.id) === undefined);
+  if(stillExcluded.length){
+    html += `<div class="pool-strip"><h3>Elective pool — not selected for this plan (${stillExcluded.length})</h3><div class="strip-list">`;
+    stillExcluded.forEach(c=>{
+      html += `<div class="strip-card pool"><b>${escapeHtml(c.code||c.name)}</b><span>${escapeHtml(c.name)}</span>
+        <select class="move-select" data-move="${c.id}" style="margin-top:8px;">
+          <option value="" selected disabled>Add to a term instead…</option>
+          ${validSemesterOptionsHtml(c, undefined)}
+        </select>
+      </div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  const optedOut = courses.filter(c => (c.pools&&c.pools.length) && overrides[c.id]==='opt-out');
+  if(optedOut.length){
+    html += `<div class="pool-strip"><h3>Opted out (${optedOut.length})</h3><div class="strip-list">`;
+    optedOut.forEach(c=>{
+      html += `<div class="strip-card pool"><b>${escapeHtml(c.code||c.name)}</b><span>${escapeHtml(c.name)} — not included in this plan.</span>
+        <select class="move-select" data-move="${c.id}" style="margin-top:8px;">
+          <option value="opt-out" selected>Not taking this course</option>
+          ${validSemesterOptionsHtml(c, undefined)}
+        </select>
+      </div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  // ---- Distribution tally ----
+  html += renderTally(courses, dissPlanned);
+
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('.course-card[data-course-id]').forEach(card=>{
+    card.addEventListener('click', e=>{
+      if(e.target.closest('select, input, button')) return;   // don't hijack the controls
+      const id = card.getAttribute('data-course-id');
+      focusedId = (focusedId === id) ? null : id;
+      renderBoard();
+    });
+  });
+  const clearBtn = wrap.querySelector('[data-chain-clear]');
+  if(clearBtn) clearBtn.addEventListener('click', ()=>{ focusedId = null; renderBoard(); });
+
+  wrap.querySelectorAll('[data-complete-toggle]').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const id = e.currentTarget.getAttribute('data-complete-toggle');
+      if(completed.has(id)) completed.delete(id); else completed.add(id);
+      generatePlan();
+    });
+  });
+  wrap.querySelectorAll('[data-complete]').forEach(cb=>{
+    cb.addEventListener('change', e=>{
+      const id = e.target.getAttribute('data-complete');
+      if(e.target.checked) completed.add(id); else completed.delete(id);
+      generatePlan();   // re-solve: freed room can change the whole sequence
+    });
+  });
+  wrap.querySelectorAll('[data-fill]').forEach(sel=>{
+    sel.addEventListener('change', e=>{
+      const courseId = e.target.value;
+      if(!courseId) return;
+      overrides[courseId] = parseInt(e.target.getAttribute('data-fill'));
+      renderBoard();
+    });
+  });
+  wrap.querySelectorAll('[data-move]').forEach(sel=>{
+    sel.addEventListener('change', e=>{
+      const val = e.target.value;
+      overrides[e.target.getAttribute('data-move')] = val==='opt-out' ? 'opt-out' : parseInt(val);
+      renderBoard();
+    });
+  });
+  wrap.querySelectorAll('[data-diss-inc]').forEach(b=>{
+    b.addEventListener('click', e=>{
+      const i = parseInt(e.target.getAttribute('data-diss-inc'));
+      dissOverrides[i] = dissHoursAt(i) + 1;
+      renderBoard();
+    });
+  });
+  wrap.querySelectorAll('[data-diss-dec]').forEach(b=>{
+    b.addEventListener('click', e=>{
+      const i = parseInt(e.target.getAttribute('data-diss-dec'));
+      dissOverrides[i] = Math.max(0, dissHoursAt(i) - 1);
+      renderBoard();
+    });
+  });
+
+  refreshLegend();
+  drawConnectors();
+}
+
+function renderTally(courses, dissPlanned){
+  const tally = {};
+  AREA_ORDER.forEach(a=>tally[a]=0);
+  courses.forEach(c=>{
+    const idx = courseSemesterIndex(c.id);
+    const counted = completed.has(c.id) || (idx !== undefined && idx !== 'opt-out');
+    if(counted && tally[c.area] !== undefined) tally[c.area] += c.credits;
+  });
+  tally.dissertation += dissPlanned;
+
+  let html = `<div class="tally"><h3>Hours by requirement area</h3><div class="tally-grid">`;
+  AREA_ORDER.forEach(a=>{
+    const have = tally[a];
+    const need = areas[a].min;
+    const met  = have >= need;
+    const pct  = need ? Math.min(100, Math.round(have/need*100)) : 100;
+    html += `<div class="tally-item ${met?'met':'short'}">
+      <div class="tally-label">${escapeHtml(areas[a].label)}</div>
+      <div class="tally-nums">${have}<small> / ${need} hrs</small></div>
+      <div class="tally-bar"><i style="width:${pct}%"></i></div>
+      <div class="tally-note">${met ? 'minimum met' : `${need-have} hr${need-have>1?'s':''} short`}</div>
+    </div>`;
+  });
+  const grand = AREA_ORDER.reduce((s,a)=>s+tally[a],0);
+  const gneed = total;
+  const gmet = grand >= gneed;
+  html += `<div class="tally-item ${gmet?'met':'short'}">
+    <div class="tally-label">Program total</div>
+    <div class="tally-nums">${grand}<small> / ${gneed} hrs</small></div>
+    <div class="tally-bar"><i style="width:${gneed?Math.min(100,Math.round(grand/gneed*100)):100}%"></i></div>
+    <div class="tally-note">${gmet ? 'minimum met' : `${gneed-grand} hrs short`}</div>
+  </div>`;
+  html += `</div></div>`;
+  return html;
+}
+
+function drawConnectors(){
+  const wrap = document.getElementById('boardWrap');
+  const board = document.getElementById('board');
+  if(!board) return;
+  const existingSvg = wrap.querySelector('svg.connectors');
+  if(existingSvg) existingSvg.remove();
+  // Nothing is drawn until a course is clicked. Rendering every edge at once
+  // produced a tangle across a 10-column map; one chain at a time reads cleanly.
+  if(!focusedId) return;
+  const chain = chainOf(focusedId);
+  const wrapRect = wrap.getBoundingClientRect();
+  let svg = `<svg class="connectors" width="${board.scrollWidth}" height="${board.scrollHeight}">`;
+  activeCatalog().filter(c=>c.kind==='course' && chain.all.has(c.id)).forEach(c=>{
+    c.prereqs.filter(pId=>chain.all.has(pId)).forEach(pId=>{
+      const fromEl = wrap.querySelector(`[data-course-id="${pId}"]`);
+      const toEl   = wrap.querySelector(`[data-course-id="${c.id}"]`);
+      if(!fromEl || !toEl) return;
+      const fr = fromEl.getBoundingClientRect(), tr = toEl.getBoundingClientRect();
+      const x1 = fr.right - wrapRect.left, y1 = fr.top - wrapRect.top + fr.height/2;
+      const x2 = tr.left  - wrapRect.left, y2 = tr.top  - wrapRect.top + tr.height/2;
+      const pIdx = courseSemesterIndex(pId), cIdx = courseSemesterIndex(c.id);
+      const violated = (pIdx===undefined) || (summerOnly(c) ? pIdx > cIdx : pIdx >= cIdx);
+      const color = violated ? 'var(--rail-red)' : 'var(--ink)';
+      const midX = (x1+x2)/2;
+      svg += `<path d="M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}" fill="none" stroke="${color}" stroke-width="2" opacity="0.85"/>`;
+      svg += `<circle cx="${x1}" cy="${y1}" r="3.5" fill="${color}"/>`;
+      svg += `<circle cx="${x2}" cy="${y2}" r="3.5" fill="${color}"/>`;
+    });
+  });
+  svg += `</svg>`;
+  wrap.insertAdjacentHTML('beforeend', svg);
+}
+
+window.addEventListener('resize', ()=>{ if(plan) drawConnectors(); });
+
+updateBrand();
+renderCatalog();
+</script>
+</body>
+</html>
