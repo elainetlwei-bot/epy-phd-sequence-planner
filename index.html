@@ -38,16 +38,13 @@
   .app{max-width:100%;min-height:100vh;display:flex;flex-direction:column;}
 
   /* ---------- Top bar ---------- */
-  .topbar{
-    background:var(--paper-raised);border-bottom:3px solid var(--ink);
-    padding:0 0 16px;display:flex;align-items:flex-end;justify-content:space-between;
-    gap:24px;flex-wrap:wrap;position:sticky;top:0;z-index:20;
-  }
-  .topbar-brand{background:var(--ink);color:#fff;padding:16px 32px;align-self:stretch;display:flex;flex-direction:column;justify-content:center;}
+  .topbar{background:var(--ink);position:sticky;top:0;z-index:20;}
+  .topbar-brand{background:var(--ink);color:#fff;padding:14px 32px;}
+  .controlbar{background:var(--paper-raised);border-bottom:2px solid var(--ink);padding:14px 32px 15px;}
   .brand{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01em;margin:0;color:#fff;}
   .brand-sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.75);margin:2px 0 0;}
 
-  .topbar-controls{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;padding-right:32px;}
+  .topbar-controls{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;}
   .ctrl{display:flex;flex-direction:column;gap:4px;}
   .ctrl > label{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);}
   .ctrl select, .ctrl input[type=number]{
@@ -64,11 +61,13 @@
 
   /* ---------- Main ---------- */
   .main{padding:28px 32px 60px;overflow-x:auto;flex:1;}
-  .main-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px;flex-wrap:wrap;gap:12px;}
+  .main-head{margin-bottom:8px;}
   .main-title{font-family:var(--display);font-weight:700;font-size:27px;margin:0;letter-spacing:-0.01em;}
   .main-sub{font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin-top:4px;}
-  .legend{display:flex;gap:14px;font-size:11px;color:var(--ink-soft);font-family:var(--mono);flex-wrap:wrap;}
+  .legend{display:flex;gap:16px;font-size:11px;color:var(--ink-soft);font-family:var(--mono);flex-wrap:wrap;margin-top:10px;}
   .legend span{display:flex;align-items:center;gap:6px;}
+  .legend .lg-icon{font-style:normal;font-size:11px;}
+  .legend-sep{width:1px;height:13px;background:var(--mist);padding:0;}
   .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
 
   .disclaimer{
@@ -78,35 +77,48 @@
   .disclaimer strong{color:var(--ink);font-weight:600;}
 
   /* ---------- Board ---------- */
-  .board-wrap{position:relative;margin-top:26px;min-width:fit-content;}
+  .board-wrap{position:relative;margin-top:26px;width:var(--board-w,100%);max-width:100%;}
+  .board{min-width:var(--board-w,auto);}
+  .completed-panel, .chain-bar, .strip-list, .tally, .unscheduled-strip, .pool-strip, .done-strip{
+    max-width:var(--board-w,100%);
+  }
+  /* The three stacked blocks share the board's exact width so their right edges
+     line up with the last column of the map. */
+  .completed-panel, .chain-bar{width:var(--board-w,100%);box-sizing:border-box;}
   .board{display:flex;gap:0;position:relative;z-index:2;}
+  .year-band{display:flex;min-width:fit-content;margin-bottom:6px;}
+  .yb-cell{flex-shrink:0;display:flex;align-items:baseline;gap:6px;padding:3px 7px 5px;
+    border-bottom:2px solid var(--ink);}
+  .yb-cell:not(:last-child){border-right:2px solid var(--paper);}
+  .yb-cell b{font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:-.01em;}
+  .yb-cell span{font-family:var(--mono);font-size:9.5px;color:var(--ink-soft);}
   svg.connectors{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:visible;}
 
-  .semester-col{width:148px;flex-shrink:0;padding:0 9px;border-right:1px dashed var(--mist-soft);}
+  .semester-col{width:116px;flex-shrink:0;padding:0 7px;border-right:1px dashed var(--mist-soft);}
   .semester-col:last-child{border-right:none;}
   .semester-col.collapsed{width:44px;padding:0;background:repeating-linear-gradient(135deg,transparent,transparent 6px,var(--mist-soft) 6px,var(--mist-soft) 7px);}
   .collapsed-label{writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--ink-soft);padding:14px 0;margin:0 auto;white-space:nowrap;}
   .sem-header{text-align:center;padding-bottom:9px;margin-bottom:11px;border-bottom:2px solid var(--ink);}
-  .sem-name{font-family:var(--display);font-weight:600;font-size:12.5px;letter-spacing:-.01em;}
-  .sem-credits{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);margin-top:3px;}
+  .sem-name{font-family:var(--display);font-weight:600;font-size:11.5px;letter-spacing:-.01em;white-space:nowrap;}
+  .sem-credits{font-family:var(--mono);font-size:9px;color:var(--ink-soft);margin-top:2px;line-height:1.35;}
   .sem-credits.over{color:var(--rail-red);font-weight:600;}
   .sem-summer{font-family:var(--mono);font-size:10px;color:var(--brass);margin-top:3px;font-weight:600;}
   .sem-year-tag{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);opacity:.8;}
 
-  .course-card{background:var(--paper-raised);border:1.5px solid var(--mist-soft);border-radius:8px;padding:8px 9px 7px;margin-bottom:10px;position:relative;box-shadow:0 1px 2px rgba(22,34,59,.05);}
+  .course-card{background:var(--paper-raised);border:1.5px solid var(--mist-soft);border-radius:7px;padding:7px 7px 6px;overflow-wrap:break-word;min-width:0;margin-bottom:10px;position:relative;box-shadow:0 1px 2px rgba(22,34,59,.05);}
   .course-card.invalid{border-color:var(--rail-red);background:var(--rail-red-soft);}
   .course-card.pool{border-left:3px solid var(--pool-blue);}
   .course-card.required{border-left:3px solid var(--ink);}
-  .cc-type{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:5px;}
+  .cc-type{font-family:var(--mono);font-size:8px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;margin-bottom:5px;}
   .cc-type.is-required{color:var(--ink);}
   .cc-type.is-elective{color:var(--pool-blue);}
   .cc-done{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10.5px;color:var(--ink-soft);cursor:pointer;font-family:var(--mono);}
   .cc-done input{accent-color:var(--rail-green);width:13px;height:13px;cursor:pointer;}
   .course-card .cc-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
-  .course-card .cc-code{font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:-.02em;}
-  .course-card .cc-credits{font-family:var(--mono);font-size:10px;color:var(--mist);}
-  .course-card .cc-title{font-family:var(--body);font-weight:500;font-size:10.5px;color:var(--ink-soft);margin:2px 0 5px;line-height:1.28;}
-  .course-card .cc-meta{display:flex;justify-content:space-between;align-items:center;gap:4px;font-family:var(--mono);font-size:9.5px;color:var(--mist);}
+  .course-card .cc-code, .diss-card .cc-code{font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:-.02em;white-space:nowrap;}
+  .course-card .cc-credits, .diss-card .cc-credits{font-family:var(--mono);font-size:10px;color:var(--mist);}
+  .course-card .cc-title, .diss-card .cc-title{font-family:var(--body);font-weight:500;font-size:10px;color:var(--ink-soft);margin:2px 0 4px;line-height:1.25;}
+  .course-card .cc-meta, .diss-card .cc-meta{display:flex;justify-content:space-between;align-items:center;gap:3px;font-family:var(--mono);font-size:9px;color:var(--mist);}
   .cc-flags{display:inline-flex;gap:3px;}
   .cc-flags i{font-style:normal;font-size:9px;line-height:1;}
   .cc-flags .flag-risk{background:var(--brass);color:#fff;border-radius:50%;width:11px;height:11px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:8px;}
@@ -118,8 +130,10 @@
   .course-card{cursor:pointer;transition:opacity .15s ease, box-shadow .15s ease;}
   .course-card.dimmed{opacity:.24;}
   .course-card.chain-root{box-shadow:0 0 0 2.5px var(--ink), 0 3px 10px rgba(93,23,37,.2);}
-  .course-card.chain-up{box-shadow:0 0 0 2px var(--brass);}
-  .course-card.chain-down{box-shadow:0 0 0 2px var(--pool-blue);}
+  .course-card.chain-up,
+  .course-card.chain-down{box-shadow:0 0 0 1.5px var(--ink-soft);}
+  .course-card.chain-up .cc-code::before{content:'\2190 ';color:var(--ink-soft);font-size:11px;}
+  .course-card.chain-down .cc-code::after{content:' \2192';color:var(--ink-soft);font-size:11px;}
   .cc-prereq{font-family:var(--mono);font-size:10px;color:var(--ink-soft);margin-top:5px;line-height:1.4;}
   .cc-prereq span{text-transform:uppercase;letter-spacing:.08em;color:var(--mist);margin-right:3px;}
 
@@ -143,7 +157,7 @@
   .course-card.summer-course{border-left:3px dashed var(--brass);}
   .cc-request{font-size:10px;font-family:var(--mono);color:var(--pool-blue);background:var(--pool-blue-soft);border-radius:5px;padding:4px 6px;margin:0 0 6px;line-height:1.4;}
   .request-tag{display:inline-block;background:var(--pool-blue-soft);color:var(--pool-blue);font-size:9.5px;font-family:var(--mono);padding:1px 6px;border-radius:10px;margin-left:6px;text-transform:uppercase;}
-  .cc-slip{font-size:9px;font-family:var(--mono);border-radius:4px;padding:3px 5px;margin:5px 0 0;line-height:1.35;letter-spacing:-.01em;}
+  .cc-slip{font-size:8.5px;font-family:var(--mono);border-radius:4px;padding:3px 4px;margin:4px 0 0;line-height:1.3;letter-spacing:-.02em;white-space:normal;overflow-wrap:break-word;}
   .cc-fullname{font-size:10px;color:var(--ink);margin-top:7px;line-height:1.35;font-weight:500;}
   .cc-deps{font-size:9.5px;font-family:var(--mono);color:var(--pool-blue);background:var(--pool-blue-soft);border-radius:4px;padding:3px 5px;margin-top:5px;}
   .cc-slip.soon{background:var(--mist-soft);color:var(--ink-soft);}
@@ -162,27 +176,27 @@
 
   /* ---------- Milestone gate: the signature element of the doctoral map ---------- */
   .gate-card{
-    background:var(--ink);color:#fff;border-radius:8px;padding:9px 10px 8px;
+    background:var(--ink);color:#fff;border-radius:8px;padding:8px 8px 7px;overflow-wrap:break-word;min-width:0;
     margin-bottom:10px;position:relative;box-shadow:0 2px 6px rgba(93,23,37,.22);
   }
   .gate-card.blocked{background:#7A2230;box-shadow:none;}
-  .gate-eyebrow{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.62);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+  .gate-eyebrow{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.62);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
   .gate-eyebrow::before{content:'';flex:1;height:1px;background:rgba(255,255,255,.28);order:2;}
-  .gate-name{font-family:var(--display);font-weight:600;font-size:12.5px;line-height:1.2;letter-spacing:-.01em;}
+  .gate-name{font-family:var(--display);font-weight:600;font-size:11.5px;line-height:1.18;letter-spacing:-.01em;}
   .gate-note{font-size:9.5px;color:rgba(255,255,255,.75);margin-top:5px;line-height:1.4;}
   .gate-warn{font-size:10.5px;color:#FFD9D2;margin-top:7px;font-weight:600;line-height:1.45;}
   .gate-card .cc-done{color:rgba(255,255,255,.7);}
 
   /* ---------- Dissertation hours ---------- */
-  .diss-card{background:var(--diss-soft);border:1.5px solid var(--diss);border-left-width:3px;border-radius:8px;padding:8px 9px 7px;margin-bottom:10px;position:relative;}
+  .diss-card{background:var(--diss-soft);border:1.5px solid var(--diss);border-left-width:3px;border-radius:8px;padding:7px 7px 6px;margin-bottom:10px;position:relative;overflow-wrap:break-word;min-width:0;}
   .diss-card .cc-type{color:var(--diss);}
-  .diss-hours{font-family:var(--display);font-weight:700;font-size:17px;color:var(--diss);line-height:1;}
-  .diss-hours small{font-family:var(--mono);font-size:10.5px;font-weight:400;margin-left:4px;}
-  .diss-stepper{display:flex;align-items:center;gap:8px;margin-top:9px;}
-  .diss-stepper button{width:26px;height:26px;border-radius:6px;border:1px solid var(--diss);background:var(--paper-raised);color:var(--diss);font-size:15px;line-height:1;cursor:pointer;font-family:var(--body);}
+  .diss-hours{font-family:var(--display);font-weight:700;font-size:16px;color:var(--diss);line-height:1;margin-top:3px;}
+  .diss-hours small{font-family:var(--mono);font-size:9px;font-weight:400;margin-left:3px;}
+  .diss-stepper{display:flex;align-items:center;gap:5px;margin-top:7px;flex-wrap:wrap;}
+  .diss-stepper button{width:22px;height:22px;flex-shrink:0;border-radius:5px;border:1px solid var(--diss);background:var(--paper-raised);color:var(--diss);font-size:15px;line-height:1;cursor:pointer;font-family:var(--body);}
   .diss-stepper button:hover{background:var(--diss);color:#fff;}
   .diss-stepper button:disabled{opacity:.35;cursor:not-allowed;}
-  .diss-runtot{font-family:var(--mono);font-size:10px;color:var(--diss);}
+  .diss-runtot{font-family:var(--mono);font-size:9px;color:var(--diss);white-space:nowrap;}
 
   /* ---------- Strips ---------- */
   .completed-panel{border:1.5px solid var(--mist);border-left:4px solid var(--rail-green);border-radius:9px;background:var(--paper-raised);padding:14px 16px 13px;margin-bottom:26px;}
@@ -214,7 +228,7 @@
   .strip-card span{color:var(--ink-soft);font-size:11px;}
 
   /* ---------- Distribution tally ---------- */
-  .tally{margin-top:36px;border-top:2px solid var(--ink);padding-top:18px;max-width:940px;}
+  .tally{margin-top:36px;border-top:2px solid var(--ink);padding-top:18px;}
   .tally h3{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink);margin:0 0 14px;}
   .tally-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px;}
   .tally-item{border-left:3px solid var(--mist);padding-left:12px;}
@@ -316,7 +330,9 @@
       <p class="brand">EPY Doctoral Planner</p>
       <p class="brand-sub" id="brandSub">Ph.D. Educational Psychology</p>
     </div>
+  </header>
 
+  <div class="controlbar">
     <div class="topbar-controls">
       <div class="ctrl">
         <label for="startTerm">Start</label>
@@ -336,22 +352,18 @@
       </div>
       <button class="btn btn-generate" id="generateBtn">Generate plan &rarr;</button>
     </div>
-  </header>
+  </div>
 
   <main class="main">
     <div class="main-head">
-      <div>
-        <p class="main-title">Doctoral Sequence Map</p>
-        <p class="main-sub" id="mainSubtitle">Set the entry point and start term, then generate a plan.</p>
-      </div>
+      <p class="main-title">Doctoral Sequence Map</p>
+      <p class="main-sub" id="mainSubtitle">Set the start term, then generate a plan.</p>
       <div class="legend" id="legend">
-        <span><span class="dot" style="background:var(--ink)"></span>required &amp; milestone</span>
+        <span><span class="dot" style="background:var(--ink)"></span>required</span>
         <span><span class="dot" style="background:var(--pool-blue)"></span>elective</span>
-        <span><span class="dot" style="background:var(--diss)"></span>dissertation hrs</span>
-        <span><span class="dot" style="background:var(--brass)"></span>locked &mdash; no other term</span>
-        <span><span class="dot" style="background:var(--rail-green)"></span>completed</span>
-        <span><span class="dot" style="background:var(--brass)"></span>chain: comes before</span>
-        <span><span class="dot" style="background:var(--pool-blue)"></span>chain: waits on it</span>
+        <span class="legend-sep"></span>
+        <span><i class="lg-icon">⏳</i>offered once every 2 yrs</span>
+        <span><i class="lg-icon">↻</i>if missed, next chance</span>
       </div>
     </div>
 
@@ -1252,9 +1264,14 @@ function prereqLabel(c){
 
 // Card-face version of the slip note: the timing only. Who's waiting downstream
 // is carried by the "!" flag and spelled out when the card is opened.
+// Telegraphic by design: this sits on every card, so its width sets the width of
+// the whole column. "Spring 2029" becomes "Sp 29", and the full sentence is still
+// on the opened card and in the tooltip.
 function slipShort(r){
-  if(r.level === 'none') return `No later offering in the ${num('numYears',5)}-year frame`;
-  return r.summer ? `If missed: ${r.next} (1 yr)` : `If missed: ${r.next} (+${r.wait} sem)`;
+  if(r.level === 'none') return `✘ none within ${num('numYears',5)} yrs`;
+  const t = String(r.next).replace('Spring ','Sp ').replace('Fall ','Fa ').replace('Summer ','Su ')
+                          .replace(/ (\d\d)(\d\d)$/, ' $2');
+  return r.summer ? `↻ ${t} (1 yr)` : `↻ ${t} (+${r.wait})`;
 }
 
 function slipRisk(c, idx){
@@ -1290,11 +1307,14 @@ function validSemesterOptionsHtml(c, selectedIdx){
 }
 
 function refreshLegend(){
-  const el = document.getElementById('legendVerify');
-  if(el) el.remove();
-  if(!activeCatalog().some(c=>c.verify)) return;
-  document.getElementById('legend').insertAdjacentHTML('beforeend',
-    `<span id="legendVerify"><span class="dot" style="background:var(--brass-soft)"></span>offering unconfirmed</span>`);
+  const leg = document.getElementById('legend');
+  ['legendVerify','legendLocked'].forEach(id=>{ const el=document.getElementById(id); if(el) el.remove(); });
+  if(plan && Object.keys(plan.lockNotes||{}).length)
+    leg.insertAdjacentHTML('beforeend',
+      `<span id="legendLocked"><i class="lg-icon">\uD83D\uDD12</i>only term available</span>`);
+  if(activeCatalog().some(c=>c.verify))
+    leg.insertAdjacentHTML('beforeend',
+      `<span id="legendVerify"><span class="dot" style="background:var(--brass-soft)"></span>offering unconfirmed</span>`);
 }
 
 function renderBoard(){
@@ -1357,6 +1377,15 @@ function renderBoard(){
          <button class="chain-clear" data-chain-clear>Clear</button>`
       : `<span class="chain-idle">Click any course to trace what it depends on and what waits on it.</span>`}
   </div>`;
+  const bandCols = 116;   // .semester-col width; border-box, so this is the outer width
+  html += `<div class="year-band">` + (()=>{
+    const keys = [];
+    plan.semesters.forEach(s2=>{ if(!keys.some(k=>k.acad===s2.acad)) keys.push({acad:s2.acad, n:0}); });
+    plan.semesters.forEach(s2=>{ keys.find(k=>k.acad===s2.acad).n++; });
+    return keys.map((k,i)=>`<div class="yb-cell" data-cols="${k.n}" style="width:${k.n*bandCols}px">
+        <b>Year ${i+1}</b><span>${k.acad}–${String(k.acad+1).slice(2)}</span>
+      </div>`).join('');
+  })() + `</div>`;
   html += `<div class="board" id="board">`;
   plan.semesters.forEach((sem, si)=>{
     const allHere     = courses.filter(c => !completed.has(c.id) && courseSemesterIndex(c.id) === si);
@@ -1378,7 +1407,7 @@ function renderBoard(){
         <div class="sem-name">${sem.label}</div>
         <div class="sem-credits ${(creditSum>maxCredits||coursesHere.length>maxCourses)?'over':''}">${coursesHere.length} course${coursesHere.length===1?'':'s'} &middot; ${creditSum} hrs</div>
         ${summerCr?`<div class="sem-summer">+ ${summerCr} hrs in Summer ${sem.year}</div>`:''}
-        <div class="sem-year-tag">Year ${sem.yearNo}</div>
+
       </div>`;
 
     allHere.forEach(c=>{
@@ -1411,7 +1440,7 @@ function renderBoard(){
             risk.level==='wide'?`<i class="flag-risk" title="${escapeHtml(risk.text)}">!</i>`:''}${
             c.verify?`<i class="flag-verify" title="Unconfirmed">?</i>`:''}</span></div>
         ${invalid?`<div class="cc-warning">⚠ ${violated?'Prereq missing':'Not offered'}</div>`:''}
-        ${risk.level==='ok'?'':`<div class="cc-slip ${risk.level}">${escapeHtml(slipShort(risk))}</div>`}
+        ${risk.level==='ok'?'':`<div class="cc-slip ${risk.level}" title="${escapeHtml(risk.text)}">${escapeHtml(slipShort(risk))}</div>`}
         ${isOpen ? `
           <div class="cc-fullname">${escapeHtml(c.name)}</div>
           ${prereqLabel(c)?`<div class="cc-prereq"><span>after</span> ${escapeHtml(prereqLabel(c))}</div>`:''}
@@ -1443,7 +1472,7 @@ function renderBoard(){
         <div class="diss-stepper">
           <button data-diss-dec="${si}" ${dh<=0?'disabled':''}>&minus;</button>
           <button data-diss-inc="${si}">+</button>
-          <span class="diss-runtot">${running} / ${total} total</span>
+          <span class="diss-runtot">${running}/${total}</span>
         </div>
       </div>`;
     }
@@ -1586,9 +1615,37 @@ function renderBoard(){
     });
   });
 
+  syncWidths();
   refreshLegend();
   drawConnectors();
 }
+
+// The board's true width is whatever the browser laid out. Reading it back keeps
+// the stacked panels and the year band locked to the columns even if the column
+// CSS changes later.
+function syncWidths(){
+  const wrap = document.getElementById('boardWrap');
+  const board = document.getElementById('board');
+  if(!wrap || !board) return;
+  const cols = board.querySelectorAll('.semester-col');
+  const measured = Array.from(cols).map(c=>c.getBoundingClientRect().width);
+  const total = measured.reduce((a,b)=>a+b,0);
+  if(total > 0){
+    wrap.style.setProperty('--board-w', total + 'px');
+    // Size each year cell to the exact columns it spans.
+    let at = 0;
+    wrap.querySelectorAll('.yb-cell').forEach(cell=>{
+      const n = parseInt(cell.getAttribute('data-cols')) || 0;
+      const w = measured.slice(at, at + n).reduce((a,b)=>a+b,0);
+      at += n;
+      if(w > 0) cell.style.width = w + 'px';
+    });
+  } else {
+    wrap.style.setProperty('--board-w', (cols.length * 116) + 'px');
+  }
+}
+
+window.addEventListener('resize', ()=>{ if(plan) syncWidths(); });
 
 function renderTally(courses, dissPlanned){
   const tally = {};
