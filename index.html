@@ -1275,7 +1275,7 @@ function prereqLabel(c){
 // the whole column. "Spring 2029" becomes "Sp 29", and the full sentence is still
 // on the opened card and in the tooltip.
 function slipShort(r){
-  if(r.level === 'none') return `✘ none within ${num('numYears',5)} yrs`;
+  if(r.level === 'none') return `✘ no later offering in plan`;
   const t = String(r.next).replace('Spring ','Sp ').replace('Fall ','Fa ').replace('Summer ','Su ')
                           .replace(/ (\d\d)(\d\d)$/, ' $2');
   return r.summer ? `↻ ${t} (1 yr)` : `↻ ${t} (+${r.wait})`;
