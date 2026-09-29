@@ -38,13 +38,18 @@
   .app{max-width:100%;min-height:100vh;display:flex;flex-direction:column;}
 
   /* ---------- Top bar ---------- */
-  .topbar{background:var(--ink);position:sticky;top:0;z-index:20;}
-  .topbar-brand{background:var(--ink);color:#fff;padding:14px 32px;}
-  .controlbar{background:var(--paper-raised);border-bottom:2px solid var(--ink);padding:14px 32px 15px;}
+  .topbar{background:var(--paper-raised);border-bottom:3px solid var(--ink);position:sticky;top:0;z-index:20;}
+  .topbar-inner{width:100%;max-width:none;margin:0;display:flex;align-items:stretch;justify-content:flex-start;gap:0;flex-wrap:wrap;}
+  .topbar-brand{background:var(--ink);color:#fff;padding:14px 26px;display:flex;flex-direction:column;justify-content:center;flex-shrink:0;}
+  .topbar-notice{flex:0 1 525px;min-width:0;max-width:525px;padding:10px 14px;align-self:center;font-size:11.5px;line-height:1.45;color:var(--ink-soft);}
+  .topbar-notice-line{display:block;white-space:normal;}
+  .topbar-notice-line + .topbar-notice-line{margin-top:2px;}
+  .topbar-notice strong{color:var(--ink);font-weight:700;}
+  .controlbar{background:var(--paper-raised);padding:0;}
   .brand{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01em;margin:0;color:#fff;}
   .brand-sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.75);margin:2px 0 0;}
 
-  .topbar-controls{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;}
+  .topbar-controls{max-width:1080px;margin:0 auto;display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:14px 26px 15px;}
   .ctrl{display:flex;flex-direction:column;gap:4px;}
   .ctrl > label{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);}
   .ctrl select, .ctrl input[type=number]{
@@ -330,9 +335,16 @@
 <div class="app">
 
   <header class="topbar">
-    <div class="topbar-brand">
-      <p class="brand">EPY Doctoral Planner</p>
-      <p class="brand-sub" id="brandSub">Ph.D. Educational Psychology</p>
+    <div class="topbar-inner">
+      <div class="topbar-brand">
+        <p class="brand">EPY Doctoral Planner</p>
+        <p class="brand-sub" id="brandSub">Ph.D. Educational Psychology</p>
+      </div>
+      <div class="topbar-notice">
+        <div class="topbar-notice-line">Unofficial tool developed and maintained by Dr. Elaine Wei. Last updated September 29, 2026.</div>
+        <div class="topbar-notice-line">Plan is built based on course scheduling information available through this date.</div>
+        <div class="topbar-notice-line"><strong>This is a planning aid, not an official schedule.</strong> Please confirm your sequence with your advisor and check the official course catalog before registering.</div>
+      </div>
     </div>
   </header>
 
@@ -375,24 +387,6 @@
       <div class="empty-state"><b>No plan yet</b>Choose an entry point and start term, then hit &ldquo;Generate plan.&rdquo;</div>
     </div>
 
-    <p class="disclaimer">
-      <strong>A planning aid, not an official program of study.</strong>
-      This tool is here to explore possible paths through the doctoral program. Actual course
-      offerings vary from year to year and depend on enrollment demand, faculty availability,
-      and department needs &mdash; a course shown here may be rescheduled or not offered at all.
-      Milestone timing (preliminary exam, prospectus, defense) depends on committee
-      availability and the pace of the student&rsquo;s own research, and cannot be scheduled
-      from a course grid alone. Nothing here is a guarantee. Confirm the sequence with the
-      major professor and the Graduate School&rsquo;s current requirements before filing a
-      program of study.
-    </p>
-
-    <p class="attribution">
-      Unofficial planning tool maintained by Dr.&nbsp;Elaine Wei, EPY Program Coordinator.
-      For official requirements, see the
-      <a href="https://www.chef.msstate.edu/programs/doctoral/edpsy" target="_blank" rel="noopener">EPY program page</a>.
-      Course offerings current as of <span id="asOf">Fall 2026</span>.
-    </p>
   </main>
 
   <section class="admin">
@@ -521,7 +515,7 @@ const DEFAULT_CATALOG = [
   {id:'n2', kind:'course', name:'Personal and Motivational Factors in Education Related Settings', code:'EPY 6073', abbr:'Motivation', credits:3, area:'concentration', prereqs:[], offerings:[off('Spring','odd')], track:'core', pools:[]},
   {id:'n3', kind:'course', name:'Psychological Foundations of Education', code:'EPY 8223', abbr:'Ed Psych Foundations', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall','odd')], track:'core', pools:[]},
   {id:'n4', kind:'course', name:'Practicum in Teaching with Educational Psychology', code:'EPY 8533', abbr:'Teaching Practicum', credits:3, area:'concentration', prereqs:['n3'], offerings:[off('Spring','odd')], track:'core', pools:[]},
-  {id:'n5', kind:'course', name:'Applied Research Seminar', code:'EPY 9263', abbr:'Applied Research Sem', credits:3, area:'concentration', prereqs:['k1','n6','k8'], offerings:[off('Fall','even')], track:'core', pools:[]},
+  {id:'n5', kind:'course', name:'Applied Research Seminar', code:'EPY 9263', abbr:'Applied Research Sem', credits:3, area:'concentration', prereqs:['k1','n6','k8'], offerings:[off('Fall'),off('Spring')], track:'core', pools:[], byRequest:true},
   {id:'n6', kind:'course', name:'Introduction to Research in Educational Psychology', code:'EPY 6513', abbr:'Intro to Research', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall','odd')], track:'core', pools:[]},
   {id:'n7', kind:'course', name:'Introduction to Qualitative Research', code:'EDF 9453', abbr:'Qual 1', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall'),off('Spring')], track:'core', pools:[]},
   {id:'n8', kind:'course', name:'Qualitative Data Collection in Education', code:'EDF 9463', abbr:'Qual 2', credits:3, area:'concentration', prereqs:['n7'], offerings:[off('Fall')], track:'core', pools:[]},
@@ -610,10 +604,12 @@ function activeGates(){ return gates.filter(g => g.track==='core' || g.track===c
 // A narrow column can't carry "Fall (odd yrs)". The map uses this short form;
 // the setup drawer keeps the full one.
 function offeringsShort(offerings){
+  if(!offerings || !offerings.length) return 'By request';
   return offerings.map(o => o.parity==='any' ? o.season.slice(0,2) : `${o.season.slice(0,2)} ${o.parity}`).join(' · ');
 }
 
 function offeringsLabel(offerings){
+  if(!offerings || !offerings.length) return 'By request only';
   return offerings.map(o => o.parity==='any' ? o.season : `${o.season} (${o.parity} yrs)`).join(', ');
 }
 
