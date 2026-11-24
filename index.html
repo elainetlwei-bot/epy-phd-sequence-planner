@@ -341,7 +341,7 @@
         <p class="brand-sub" id="brandSub">Ph.D. Educational Psychology</p>
       </div>
       <div class="topbar-notice">
-        <div class="topbar-notice-line">Unofficial tool developed and maintained by Dr. Elaine Wei. Last updated September 29, 2026.</div>
+        <div class="topbar-notice-line">Unofficial tool developed and maintained by Dr. Elaine Wei. Last updated November 23, 2026.</div>
         <div class="topbar-notice-line">Plan is built based on course scheduling information available through this date.</div>
         <div class="topbar-notice-line"><strong>This is a planning aid, not an official schedule.</strong> Please confirm your sequence with your advisor and check the official course catalog before registering.</div>
       </div>
@@ -506,7 +506,7 @@ const DEFAULT_CATALOG = [
   {id:'k4', kind:'course', name:'Cognitive and Affective Development', code:'EPY 8293', abbr:'Cognitive & Affective Dev', credits:3, area:'core', prereqs:[], offerings:[off('Fall','even')], track:'core', pools:[]},
   {id:'k5', kind:'course', name:'Psychometric Theory', code:'EPY 8513', abbr:'Psychometric Theory', credits:3, area:'core', prereqs:['k1','k2','k3'], offerings:[off('Spring')], track:'core', pools:[]},
   {id:'k6', kind:'course', name:'Multivariate Analysis in Educational Research', code:'EPY 9213', abbr:'Stats 3', credits:3, area:'core', prereqs:['k2'], offerings:[off('Fall')], track:'core', pools:[]},
-  {id:'k7', kind:'course', name:'Seminar in Contemporary Issues in Educational Psychology', code:'EPY 9723', abbr:'Ed Psych Seminar', credits:3, area:'core', prereqs:[], offerings:[off('Spring','even')], track:'core', pools:[]},
+  {id:'k7', kind:'course', name:'Seminar in Contemporary Issues in Educational Psychology', code:'EPY 9723', abbr:'Ed Psych Seminar', credits:3, area:'core', prereqs:[], offerings:[off('Fall','odd')], track:'core', pools:[]},
   {id:'k8', kind:'course', name:'Educational Research Design', code:'EDF 9373', abbr:'Ed Research Design', credits:3, area:'core', prereqs:['n6','k2'], offerings:[off('Summer')], track:'core', pools:[]},
   {id:'k9', kind:'dissertation', name:'Dissertation Research in Educational Psychology', code:'EPY 9000', abbr:'Dissertation Research', credits:0, area:'dissertation', prereqs:[], offerings:[off('Fall'),off('Spring')], track:'core', pools:[]},
 
@@ -514,7 +514,7 @@ const DEFAULT_CATALOG = [
   {id:'n1', kind:'course', name:'Applications of Learning Theories in Educational and Related Settings', code:'EPY 6033', abbr:'Learning Theories', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall'),off('Spring')], track:'core', pools:[]},
   {id:'n2', kind:'course', name:'Personal and Motivational Factors in Education Related Settings', code:'EPY 6073', abbr:'Motivation', credits:3, area:'concentration', prereqs:[], offerings:[off('Spring','odd')], track:'core', pools:[]},
   {id:'n3', kind:'course', name:'Psychological Foundations of Education', code:'EPY 8223', abbr:'Ed Psych Foundations', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall','odd')], track:'core', pools:[]},
-  {id:'n4', kind:'course', name:'Practicum in Teaching with Educational Psychology', code:'EPY 8533', abbr:'Teaching Practicum', credits:3, area:'concentration', prereqs:['n3'], offerings:[off('Spring','odd')], track:'core', pools:[]},
+  {id:'n4', kind:'course', name:'Practicum in Teaching with Educational Psychology', code:'EPY 8533', abbr:'Teaching Practicum', credits:3, area:'concentration', prereqs:['n3'], offerings:[off('Fall','even')], track:'core', pools:[]},
   {id:'n5', kind:'course', name:'Applied Research Seminar', code:'EPY 9263', abbr:'Applied Research Sem', credits:3, area:'concentration', prereqs:['k1','n6','k8'], offerings:[off('Fall'),off('Spring')], track:'core', pools:[], byRequest:true},
   {id:'n6', kind:'course', name:'Introduction to Research in Educational Psychology', code:'EPY 6513', abbr:'Intro to Research', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall','odd')], track:'core', pools:[]},
   {id:'n7', kind:'course', name:'Introduction to Qualitative Research', code:'EDF 9453', abbr:'Qual 1', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall'),off('Spring')], track:'core', pools:[]},
