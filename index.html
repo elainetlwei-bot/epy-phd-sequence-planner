@@ -516,7 +516,7 @@ const DEFAULT_CATALOG = [
   {id:'n3', kind:'course', name:'Psychological Foundations of Education', code:'EPY 8223', abbr:'Ed Psych Foundations', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall','odd')], track:'core', pools:[]},
   {id:'n4', kind:'course', name:'Practicum in Teaching with Educational Psychology', code:'EPY 8533', abbr:'Teaching Practicum', credits:3, area:'concentration', prereqs:['n3'], offerings:[off('Fall','even')], track:'core', pools:[]},
   {id:'n5', kind:'course', name:'Applied Research Seminar', code:'EPY 9263', abbr:'Applied Research Sem', credits:3, area:'concentration', prereqs:['k1','n6','k8'], offerings:[off('Fall'),off('Spring')], track:'core', pools:[], byRequest:true},
-  {id:'n6', kind:'course', name:'Introduction to Research in Educational Psychology', code:'EPY 6513', abbr:'Intro to Research', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall','odd')], track:'core', pools:[]},
+  {id:'n6', kind:'course', name:'Introduction to Research in Educational Psychology', code:'EPY 6513', abbr:'Intro to Research', credits:3, area:'concentration', prereqs:[], offerings:[{season:'Fall',year:2027},{season:'Fall',parity:'even',fromYear:2028}], track:'core', pools:[]},
   {id:'n7', kind:'course', name:'Introduction to Qualitative Research', code:'EDF 9453', abbr:'Qual 1', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall'),off('Spring')], track:'core', pools:[]},
   {id:'n8', kind:'course', name:'Qualitative Data Collection in Education', code:'EDF 9463', abbr:'Qual 2', credits:3, area:'concentration', prereqs:['n7'], offerings:[off('Fall')], track:'core', pools:[]},
   {id:'n9', kind:'course', name:'Qualitative Data Analysis', code:'EDF 9473', abbr:'Qual 3', credits:3, area:'concentration', prereqs:['n8'], offerings:[off('Fall'),off('Spring')], track:'core', pools:[], byRequest:true},
@@ -605,12 +605,12 @@ function activeGates(){ return gates.filter(g => g.track==='core' || g.track===c
 // the setup drawer keeps the full one.
 function offeringsShort(offerings){
   if(!offerings || !offerings.length) return 'By request';
-  return offerings.map(o => o.parity==='any' ? o.season.slice(0,2) : `${o.season.slice(0,2)} ${o.parity}`).join(' · ');
+  return offerings.map(o => o.year!=null ? `${o.season.slice(0,2)} ${o.year}` : o.parity==='any' ? o.season.slice(0,2) : `${o.season.slice(0,2)} ${o.parity}${o.fromYear ? ' '+o.fromYear+'+' : ''}`).join(' · ');
 }
 
 function offeringsLabel(offerings){
   if(!offerings || !offerings.length) return 'By request only';
-  return offerings.map(o => o.parity==='any' ? o.season : `${o.season} (${o.parity} yrs)`).join(', ');
+  return offerings.map(o => o.year!=null ? `${o.season} ${o.year}` : o.parity==='any' ? o.season : `${o.season} (${o.parity} yrs${o.fromYear ? ', from '+o.fromYear : ''})`).join(', ');
 }
 
 // A course offered in exactly one season on an odd/even cycle comes around once
@@ -853,7 +853,7 @@ document.getElementById('clearBtn').addEventListener('click', ()=>{
 //  SCHEDULING ENGINE
 // ============================================================================
 function offeringMatches(offerings, term, year){
-  return offerings.some(o => o.season===term && (o.parity==='any' || (o.parity==='odd' ? year%2!==0 : year%2===0)));
+  return offerings.some(o => o.season===term && (o.year!=null ? year===o.year : (o.fromYear==null || year>=o.fromYear) && (o.parity==='any' || (o.parity==='odd' ? year%2!==0 : year%2===0))));
 }
 
 // Summer is an ordinary enrollment term. It has to be: EDF 9373 is a required
@@ -906,7 +906,7 @@ function feasibleIdx(c, semesters){
     // Summer YYYY follows Spring YYYY, so an odd/even cycle is read off Spring.
     semesters.forEach((s,i)=>{
       if(s.term !== 'Spring') return;
-      if(c.offerings.some(o => o.parity==='any' || (o.parity==='odd' ? s.year%2!==0 : s.year%2===0))) out.push(i);
+      if(offeringMatches(c.offerings, 'Summer', s.year)) out.push(i);
     });
     return out;
   }
