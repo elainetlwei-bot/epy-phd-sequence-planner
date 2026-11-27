@@ -341,7 +341,7 @@
         <p class="brand-sub" id="brandSub">Ph.D. Educational Psychology</p>
       </div>
       <div class="topbar-notice">
-        <div class="topbar-notice-line">Unofficial tool developed and maintained by Dr. Elaine Wei. Last updated November 23, 2026.</div>
+        <div class="topbar-notice-line">Unofficial tool developed and maintained by Dr. Elaine Wei. Last updated November 27, 2026.</div>
         <div class="topbar-notice-line">Plan is built based on course scheduling information available through this date.</div>
         <div class="topbar-notice-line"><strong>This is a planning aid, not an official schedule.</strong> Please confirm your sequence with your advisor and check the official course catalog before registering.</div>
       </div>
@@ -514,7 +514,7 @@ const DEFAULT_CATALOG = [
   {id:'n1', kind:'course', name:'Applications of Learning Theories in Educational and Related Settings', code:'EPY 6033', abbr:'Learning Theories', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall'),off('Spring')], track:'core', pools:[]},
   {id:'n2', kind:'course', name:'Personal and Motivational Factors in Education Related Settings', code:'EPY 6073', abbr:'Motivation', credits:3, area:'concentration', prereqs:[], offerings:[off('Spring','odd')], track:'core', pools:[]},
   {id:'n3', kind:'course', name:'Psychological Foundations of Education', code:'EPY 8223', abbr:'Ed Psych Foundations', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall','odd')], track:'core', pools:[]},
-  {id:'n4', kind:'course', name:'Practicum in Teaching with Educational Psychology', code:'EPY 8533', abbr:'Teaching Practicum', credits:3, area:'concentration', prereqs:['n3'], offerings:[off('Fall','even')], track:'core', pools:[]},
+  {id:'n4', kind:'course', name:'Practicum in Teaching with Educational Psychology', code:'EPY 8533', abbr:'Teaching Practicum', credits:3, area:'concentration', prereqs:['n3'], offerings:[{season:'Spring',parity:'odd',fromYear:2029}], track:'core', pools:[]},
   {id:'n5', kind:'course', name:'Applied Research Seminar', code:'EPY 9263', abbr:'Applied Research Sem', credits:3, area:'concentration', prereqs:['k1','n6','k8'], offerings:[off('Fall'),off('Spring')], track:'core', pools:[], byRequest:true},
   {id:'n6', kind:'course', name:'Introduction to Research in Educational Psychology', code:'EPY 6513', abbr:'Intro to Research', credits:3, area:'concentration', prereqs:[], offerings:[{season:'Fall',year:2027},{season:'Fall',parity:'even',fromYear:2028}], track:'core', pools:[]},
   {id:'n7', kind:'course', name:'Introduction to Qualitative Research', code:'EDF 9453', abbr:'Qual 1', credits:3, area:'concentration', prereqs:[], offerings:[off('Fall'),off('Spring')], track:'core', pools:[]},
